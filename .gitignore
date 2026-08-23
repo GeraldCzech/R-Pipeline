@@ -1,0 +1,35 @@
+# Large data files
+*.rds
+*.RData
+*.rda
+
+# Cache and temporary
+cache/
+.cache
+.Rhistory
+.Rprofile
+*.tmp
+
+# Old experiments and drafts
+01_BLOCK*.R
+01_COMPREHENSIVE*.R
+02_CACHE*.R
+03_SEM_ANALYSIS_OLD.R
+03_SEM_ANALYSIS_FIXED.R
+00_*.R
+*_OLD.R
+*_TEST.R
+*_DRAFT*.R
+*_DEEP_EXPLORATION*.R
+*SIMPLE_ANALYSIS*.R
+*FOCUSED*.R
+*RESILIENT*.R
+
+# System files
+.DS_Store
+.claude/
+.git/
+
+# Results temp
+/tmp/
+*.log
