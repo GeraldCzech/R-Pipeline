@@ -158,14 +158,12 @@ model_sem_baseline <- '
   tr_lv =~ B101_01_ord + B101_02_ord + B101_03_ord
   co_lv =~ B102_01_ord + B102_02_ord + B102_03_ord
 
-  # Structural
+  # Structural (Baseline path model: RC → TR → CO)
   tr_lv ~ a*rc_lv
   co_lv ~ b*tr_lv + c*rc_lv
-  donated ~ d*co_lv + e*tr_lv + f*rc_lv
 
   # Indirect effects
   ind_rc_tr_co := a*b
-  ind_tr_co := b
 '
 
 cat("Fitting Baseline SEM (single-level, ordinal WLSMV)...\n")
@@ -205,52 +203,67 @@ cat(sprintf("  Trust:       ICC = %.4f (%.1f%% org variance)\n", icc_tr$ICC_adju
 cat(sprintf("  Commitment:  ICC = %.4f (%.1f%% org variance)\n", icc_co$ICC_adjusted, icc_co$ICC_adjusted*100))
 cat(sprintf("  Donation:    ICC = %.4f (%.1f%% org variance)\n\n", icc_donated$ICC_adjusted, icc_donated$ICC_adjusted*100))
 
-cat("NOTE: Multilevel SEM in lavaan with random intercepts:\n")
-cat("  Using cluster= argument to adjust SEs for organization nesting\n\n")
+cat("NOTE: Multilevel modeling with manifest scores + lme4\n")
+cat("  Using random intercepts to account for organization clustering\n\n")
 
-# Fit with cluster correction
-fit_sem_clustered <- sem(model_sem_baseline,
-                         data=data_for_cfa,
-                         ordered=c("TOM_ord","SAW_ord","B101_01_ord","B101_02_ord","B101_03_ord",
-                                  "B102_01_ord","B102_02_ord","B102_03_ord"),
-                         estimator="WLSMV",
-                         cluster="org_id")
+# Prepare data for multilevel models
+data_ml <- data_analysis %>%
+  select(person_id, org_id, rc_z, tr_z, co_z, donated, donation_amount, org_name) %>%
+  mutate(donated = as.numeric(donated)) %>%
+  filter(!is.na(rc_z), !is.na(tr_z), !is.na(co_z))
 
-cat("SEM with Cluster Adjustment (org-level):\n")
-sem_params_cluster <- parameterEstimates(fit_sem_clustered, standardized=TRUE)
-print(sem_params_cluster[sem_params_cluster$op %in% c("~","=~"),])
+# Test RC → TR path with random intercepts
+model_ml_rc_tr <- lmer(tr_z ~ rc_z + (1|org_id), data=data_ml)
+cat("RC → TR with Random Intercepts:\n")
+print(summary(model_ml_rc_tr))
+
+# Test TR → CO path
+model_ml_tr_co <- lmer(co_z ~ tr_z + rc_z + (1|org_id), data=data_ml)
+cat("\nTR → CO (controlling RC) with Random Intercepts:\n")
+print(summary(model_ml_tr_co))
+
+# Extract coefficients
+coef_rc_tr <- fixef(model_ml_rc_tr)["rc_z"]
+coef_tr_co <- fixef(model_ml_tr_co)["tr_z"]
+coef_rc_co <- fixef(model_ml_tr_co)["rc_z"]
+
+cat("\n\nMultilevel Path Estimates (manifest scores):\n")
+cat(sprintf("  RC → TR:  b = %.4f\n", coef_rc_tr))
+cat(sprintf("  TR → CO:  b = %.4f\n", coef_tr_co))
+cat(sprintf("  RC → CO:  b = %.4f\n", coef_rc_co))
+cat(sprintf("  Indirect (RC→TR→CO): %.4f\n\n", coef_rc_tr * coef_tr_co))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PHASE 6: TWO-OUTCOME MODELS (Binary + Amount)
 # ─────────────────────────────────────────────────────────────────────────────
 
-cat("\n\nPHASE 6: TWO-OUTCOME MODELS\n")
+cat("\n\nPHASE 6: TWO-OUTCOME MODELS (Binary + Amount)\n")
 cat("═════════════════════════════════════════════════════════════════\n\n")
 
-# Model 1: Extensive margin (logistic regression on manifests)
+# Model 1: Extensive margin (logistic regression)
 cat("Model 1: Extensive Margin (Binary: donate yes/no)\n")
-cat("Using manifest scores + org clustering...\n\n")
+cat("Using manifest scores with random intercepts...\n\n")
 
-data_analysis$org_id_factor <- factor(data_analysis$org_id)
+model_binary_ml <- glmer(donated ~ rc_z + tr_z + co_z + (1|org_id),
+                         family=binomial(link="logit"),
+                         data=data_ml,
+                         control=glmerControl(optimizer="bobyqa"))
 
-model_binary <- glm(donated ~ rc_z + tr_z + co_z,
-                    family=binomial(link="logit"),
-                    data=data_analysis)
-
-cat("Logistic Regression Results:\n")
-print(summary(model_binary))
+cat("Logistic Mixed Model Results:\n")
+print(summary(model_binary_ml))
 
 cat("\n\nModel 2: Intensive Margin (Amount | donated > 0)\n")
 cat("Using Gamma GLM for positive donations...\n\n")
 
-data_donors <- data_analysis %>% filter(donated == 1)
+data_donors_ml <- data_ml %>% filter(donated == 1)
 
-model_amount <- glm(donation_amount ~ rc_z + tr_z + co_z,
-                    family=Gamma(link="log"),
-                    data=data_donors)
+model_amount_ml <- glmer(donation_amount ~ rc_z + tr_z + co_z + (1|org_id),
+                         family=Gamma(link="log"),
+                         data=data_donors_ml,
+                         control=glmerControl(optimizer="bobyqa"))
 
-cat("Gamma GLM Results:\n")
-print(summary(model_amount))
+cat("Gamma Mixed Model Results:\n")
+print(summary(model_amount_ml))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PHASE 7: RESULTS SUMMARY & SAVE
