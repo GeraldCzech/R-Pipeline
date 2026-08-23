@@ -1,21 +1,25 @@
-# Brand Equity → Donation Relationships: Comprehensive SEM & Moderation Analysis Pipeline
+# Brand Equity → Donation Relationships: 2025 Discovery Pipeline
+### ⚠️ AUDIT-CORRECTED - 2025 Exploratory Only | 2026 Preregistered
 
-**Status:** ✅ 100% Complete | **Date:** 2026-08-23 | **Sample:** N=1,337 donors across 26 nonprofits
+**Status:** ✅ Methodologically Audited & Corrected | **Date:** 2026-08-23 | **Phase:** Discovery (N=2,038 observations, 26 orgs)
 
 ---
 
-## Quick Summary
+## ⚠️ CRITICAL UPDATE: Methodological Audit Applied
 
-This repository contains a **complete statistical pipeline** implementing the **Chatzipanagiotou 4-stage brand relationship model** with:
+This repository has undergone a comprehensive methodological audit (see `AUDIT_CORRECTED_FINDINGS.md`). Key changes:
 
-- **Frequentist & Bayesian SEM** (CFI=0.9951, Rhat<1.01)
-- **Intensive MCMC validation** (16,000 samples per model, 4 chains)
-- **30+ moderation analyses** (donor type 8.9×, org effects, cross-level interactions)
-- **Multilevel modeling** with ICCs (22% Recognition variance at org-level)
-- **Measurement invariance testing** (configural → metric → scalar confirmed)
-- **Publication-ready documentation** with all calculations explained
+- ✅ **VALID:** Trust & Commitment measurement is robust (α>.91, CFI>.99)
+- ✅ **VALID:** Awareness alone is weak; Trust/Commitment are primary mechanisms
+- ✅ **VALID:** Organization heterogeneity exists and justifies further study
+- ❌ **REMOVED:** Path coefficients .847/.602/.395 (not verifiable in repository)
+- ❌ **REMOVED:** "1,681-fold variation" (misinterpreted variance statistic)
+- ❌ **REMOVED:** "8.9× moderation" (not a formal interaction test)
+- ❌ **REMOVED:** OF02_Freq as frequency, OF01 as Intention
 
-**Key Finding:** Organization-level effects dominate individual-level heterogeneity. Commitment→Donation effects vary **1681-fold** across organizations.
+**Designation:** 2025 = DISCOVERY PHASE | 2026 = PREREGISTERED CONFIRMATION
+
+This is an **exploratory analysis** for hypothesis generation, not a confirmatory dissertation study.
 
 ---
 
