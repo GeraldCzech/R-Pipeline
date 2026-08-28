@@ -11,14 +11,16 @@ library(performance)
 library(here)
 library(yaml)
 
+# P0-01: Accept RUN_OUTPUT_DIR as command-line argument
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
+output_base <- args[1]
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
 cat("║  PHASE 4-7: CFA + MULTILEVEL GLMMs                                       ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
-
-# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator
-output_base <- Sys.getenv("RUN_OUTPUT_DIR")
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 
 # Load clean data
 data_analysis_file <- file.path(output_base, "00_DATA_ANALYSIS_CLEAN.rds")

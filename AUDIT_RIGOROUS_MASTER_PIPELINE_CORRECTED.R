@@ -22,6 +22,12 @@ library(lme4)
 library(here)
 library(yaml)
 
+# P0-01: Accept RUN_OUTPUT_DIR as command-line argument (not environment variable)
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
+output_base <- args[1]
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+
 # I-01 FIX: Load config for portable paths
 config <- yaml::read_yaml(here::here("config.yml"))
 set.seed(config$analysis$seed)
@@ -31,11 +37,6 @@ cat("╔════════════════════════
 cat("║  AUDIT-RIGOROUS MASTER PIPELINE (CORRECTED - P0 Fixes)                   ║\n")
 cat("║  Phase 0-3: Data Integrity, Person-ID, Outcome Validation                ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
-
-# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator environment variable
-# This ensures run isolation - each run gets its own output directory
-output_base <- Sys.getenv("RUN_OUTPUT_DIR")
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 dir.create(output_base, showWarnings = FALSE, recursive = TRUE)
 
 cat("Session Info:\n")

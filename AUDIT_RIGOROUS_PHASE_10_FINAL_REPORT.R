@@ -8,14 +8,16 @@ library(tidyverse)
 library(here)
 library(yaml)
 
+# P0-01: Accept RUN_OUTPUT_DIR as command-line argument
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
+output_base <- args[1]
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
 cat("║  PHASE 10: FINAL RESULTS SYNTHESIS & REPORTING                           ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
-
-# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator
-output_base <- Sys.getenv("RUN_OUTPUT_DIR")
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 
 # P0-06 FIX: CHECK GATE STATUS BEFORE generating report
 cat("P0-06: Checking gate status before report generation...\n")

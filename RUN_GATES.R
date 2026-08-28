@@ -12,15 +12,17 @@
 
 library(tidyverse)
 
+# P0-01: Accept RUN_OUTPUT_DIR as command-line argument
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
+output_base <- args[1]
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
 cat("║  RUN GATES: P1 VALIDATION CHECKS                                         ║\n")
 cat("║  Hard gates must pass before Phase 10 reporting allowed                   ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
-
-# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator
-output_base <- Sys.getenv("RUN_OUTPUT_DIR")
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 
 gates_passed <- 0
 gates_failed <- 0

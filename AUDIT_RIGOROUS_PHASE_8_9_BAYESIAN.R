@@ -14,6 +14,12 @@ library(bayesplot)
 library(here)
 library(yaml)
 
+# P0-01: Accept RUN_OUTPUT_DIR as command-line argument
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
+output_base <- args[1]
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
 cat("║  PHASE 8-9: BAYESIAN VALIDATION WITH FULL DIAGNOSTICS                    ║\n")

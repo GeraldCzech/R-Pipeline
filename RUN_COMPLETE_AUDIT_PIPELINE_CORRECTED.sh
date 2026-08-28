@@ -14,7 +14,7 @@ run_phase() {
   local phase="$1"
   local script="$2"
   local log="$3"
-  RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "$script" >> "$log" 2>&1
+  Rscript "$script" "$OUTPUT_DIR" >> "$log" 2>&1
   if [ $? -eq 0 ]; then
     echo "✓ $phase COMPLETE" | tee -a "$RUN_LOG"
   else
