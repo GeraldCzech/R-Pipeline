@@ -28,10 +28,14 @@ cat("P0-01 & P0-02: Parse testing all R scripts...\n")
 cat("─────────────────────────────────────────────────────────────────────────────\n\n")
 
 scripts_to_test <- c(
-  "AUDIT_RIGOROUS_MASTER_PIPELINE.R",
+  "00_PREFLIGHT_AUDIT.R",
+  "01_PERSON_ID_RECONSTRUCTION.R",
+  "02_OUTCOME_PARSER.R",
+  "AUDIT_RIGOROUS_MASTER_PIPELINE_CORRECTED.R",
   "AUDIT_RIGOROUS_PHASE_4_7_CFA_GLMM.R",
   "AUDIT_RIGOROUS_PHASE_8_9_BAYESIAN.R",
-  "AUDIT_RIGOROUS_PHASE_10_FINAL_REPORT.R"
+  "AUDIT_RIGOROUS_PHASE_10_FINAL_REPORT.R",
+  "RUN_GATES.R"
 )
 
 base_dir <- "/home/gerald/R-pipeline"

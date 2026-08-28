@@ -53,9 +53,14 @@ report <- "
 ## EXECUTIVE SUMMARY
 
 This analysis examines the relationship between brand trust/commitment and
-donation behavior using multilevel structural equation modeling with Bayesian
-validation. All analyses follow PhD-dissertation standards with complete
-transparency, reproducibility, and diagnostic reporting.
+donation behavior using a two-stage design combining ordinal CFA-derived factor
+scores with cross-classified mixed-effects outcome models and Bayesian
+sensitivity analysis. All analyses follow PhD-dissertation standards with
+complete transparency, reproducibility, and diagnostic reporting.
+
+NOTE: This is a two-stage factor-score analysis, not structural equation
+modeling. Measurement uncertainty in the factor scores is not propagated into
+the outcome models.
 
 KEY FINDINGS:
 ─────────────────────────────────────────────────────────────────────────────
@@ -219,6 +224,14 @@ cat(sprintf("\n✓ Final report saved: %s\n\n", report_file))
 # CREATE MASTER SUMMARY CSV
 # ═════════════════════════════════════════════════════════════════════════════
 
+# AUDIT R-01 FIX: Select CFA indices by NAME, not POSITION
+# Previous code used [1:4] which selected χ², df, p-value, CFI (WRONG!)
+# Now select CFI, TLI, RMSEA, SRMR by name (CORRECT)
+cfa_cfi <- cfa_fit_indices %>% filter(index == "CFI") %>% pull(value)
+cfa_tli <- cfa_fit_indices %>% filter(index == "TLI") %>% pull(value)
+cfa_rmsea <- cfa_fit_indices %>% filter(index == "RMSEA") %>% pull(value)
+cfa_srmr <- cfa_fit_indices %>% filter(index == "SRMR") %>% pull(value)
+
 summary_data <- tibble(
   analysis_phase = c(
     "CFA", "CFA", "CFA", "CFA",
@@ -235,7 +248,7 @@ summary_data <- tibble(
     "Rhat max", "Divergences"
   ),
   value = c(
-    cfa_fit_indices$value[1:4],
+    cfa_cfi, cfa_tli, cfa_rmsea, cfa_srmr,
     binary_fixed$coefficient[2:3], diagnostics$n_obs[1],
     amount_fixed$coefficient[2:3], diagnostics$n_obs[2],
     bayes_diag$rhat_max[1], bayes_diag$divergences[1],

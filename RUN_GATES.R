@@ -161,18 +161,28 @@ if (file.exists(cfa_file)) {
   cat(sprintf("  CFI: %.4f (threshold > .95)\n", cfi))
   cat(sprintf("  RMSEA: %.4f (threshold < .08)\n", rmsea))
 
-  cfi_ok <- cfi > 0.90  # Be lenient for ordinal
-  rmsea_ok <- rmsea < 0.10
+  # AUDIT M-01: Hard criteria - must match published standards
+  # CFA for ordinal items: CFI > .95, RMSEA < .08
+  cfi_ok <- cfi > 0.95
+  rmsea_ok <- rmsea < 0.08
+
+  cat(sprintf("  CFI threshold: > .95, actual: %.4f — %s\n", cfi, ifelse(cfi_ok, "✓", "✗")))
+  cat(sprintf("  RMSEA threshold: < .08, actual: %.4f — %s\n", rmsea, ifelse(rmsea_ok, "✓", "✗")))
 
   if (cfi_ok && rmsea_ok) {
-    cat("✓ CFA fit acceptable\n")
-    cat("\nG4 PASS: CFA model fit adequate\n\n")
+    cat("\n✓ G4 PASS: CFA fit meets published standards\n\n")
     gates_passed <- gates_passed + 1
   } else {
-    cat("✗ CFA fit marginal\n")
-    cat("\nG4 WARN: CFA fit may need investigation\n")
-    cat("(Gate passes but flag for sensitivity analysis)\n\n")
-    gates_passed <- gates_passed + 1  # Warn but don't fail
+    cat("\n✗ G4 FAIL: CFA fit below dissertation requirements\n")
+    cat("  → Sensitivity analysis or model refinement required\n")
+    cat("  → Reporting must address fit limitations\n\n")
+    gates_failed <- gates_failed + 1
+    gates_log <- bind_rows(gates_log, tibble(
+      gate = "G4",
+      category = "CFA Fit",
+      status = "FAIL",
+      issue = sprintf("CFI=%.4f (need >.95), RMSEA=%.4f (need <.08)", cfi, rmsea)
+    ))
   }
 } else {
   cat("G4 FAIL: CFA fit indices not found\n\n")
@@ -207,21 +217,33 @@ if (file.exists(bayes_diag_file)) {
     }
   }
 
-  # Check if any critical failures
-  rhat_fail <- any(bayes_diag$rhat_max > 1.05)
-  div_fail <- any(bayes_diag$divergences > 50)
+  # AUDIT M-02: Hard criteria must match display
+  # Display shows: Rhat < 1.01, Divergences = 0
+  # Therefore gate MUST use same criteria
+  cat("\nAudit M-02 Fix: Display and gate criteria must match\n")
+  cat("Hard thresholds: Rhat < 1.01, Divergences < 5 (strict)\n\n")
 
-  if (!rhat_fail && !div_fail) {
-    cat("\nG5 PASS: Bayesian convergence acceptable\n\n")
+  rhat_ok <- all(bayes_diag$rhat_max < 1.01)
+  div_ok <- all(bayes_diag$divergences < 5)  # Strict: no divergences tolerated
+
+  cat(sprintf("Rhat check (< 1.01): %s\n", ifelse(rhat_ok, "✓ PASS", "✗ FAIL")))
+  cat(sprintf("Divergences check (< 5): %s\n", ifelse(div_ok, "✓ PASS", "✗ FAIL")))
+
+  if (rhat_ok && div_ok) {
+    cat("\n✓ G5 PASS: Bayesian convergence excellent\n\n")
     gates_passed <- gates_passed + 1
   } else {
-    cat("\nG5 FAIL: Critical convergence issues\n\n")
+    cat("\n✗ G5 FAIL: Convergence issues prevent inferential release\n")
+    cat("  → Model requires reparametrization or longer sampling\n")
+    cat("  → Results cannot be included in dissertational claims\n\n")
     gates_failed <- gates_failed + 1
     gates_log <- bind_rows(gates_log, tibble(
       gate = "G5",
       category = "Bayesian Convergence",
       status = "FAIL",
-      issue = "Rhat or divergence threshold exceeded"
+      issue = sprintf("Rhat: %s, Divergences: %s",
+                     ifelse(rhat_ok, "✓", "✗"),
+                     ifelse(div_ok, "✓", "✗"))
     ))
   }
 } else {
