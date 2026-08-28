@@ -106,7 +106,7 @@ log ""
 
 log "RECONSTRUCTION MODULE 2: Outcome Parser (P0-04)..."
 
-if Rscript "${BASE_DIR}/02_OUTCOME_PARSER.R" >> "${LOG_DIR}/reconstruction_02.log" 2>&1; then
+if Rscript "${BASE_DIR}/01_ANALYSIS_INPUT_VALIDATION.R" >> "${LOG_DIR}/reconstruction_02.log" 2>&1; then
   log_success "RECONSTRUCTION 02 (Outcome with Audit Trail)"
 else
   log_error "RECONSTRUCTION 02" "See ${LOG_DIR}/reconstruction_02.log"
