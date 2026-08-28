@@ -25,7 +25,6 @@ cat("╔════════════════════════
 cat("║  PHASE 8-9: BAYESIAN VALIDATION WITH FULL DIAGNOSTICS                    ║\n")
 cat("║  WARNING: This phase takes 30-60 minutes for full Bayesian sampling       ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 
 # Load data
 data_glmm_binary <- readRDS(file.path(output_base, "data_glmm_binary_OBJECT.rds"))
