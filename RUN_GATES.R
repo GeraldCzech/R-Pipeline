@@ -65,6 +65,8 @@ for (file in required_files) {
   fpath <- file.path(output_base, file)
   if (file.exists(fpath)) {
     file_mtime <- file.mtime(fpath)
+    # Ensure timezone consistency: convert file_mtime to UTC for comparison
+    attr(file_mtime, "tzone") <- "UTC"
     if (is.na(file_mtime) || file_mtime < run_start_time) {
       cat(sprintf("  ✗ %s EXISTS but old (not from this run)\n", file))
       all_files_exist <- FALSE
