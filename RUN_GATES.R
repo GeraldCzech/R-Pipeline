@@ -260,13 +260,46 @@ cat("╔════════════════════════
 cat(sprintf("║  RUN GATES SUMMARY: %d PASSED, %d FAILED                                   ║\n", gates_passed, gates_failed))
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
+# AUDIT R-02: Release status must be determined by gate results
+# Not hardcoded - must reflect actual gate outcomes
+
+release_status <- if (gates_failed > 0) {
+  "blocked"
+} else {
+  # For 2025 discovery data: exploratory only (per audit)
+  "exploratory_only"
+}
+
+# Write gate status to CSV for Phase 10 to read
+gate_status_report <- tibble(
+  timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+  gates_passed = gates_passed,
+  gates_failed = gates_failed,
+  release_status = release_status,
+  can_generate_report = (gates_failed == 0),
+  can_publish_results = FALSE  # 2025 is discovery phase
+)
+
+write_csv(gate_status_report, file.path(output_base, "GATE_STATUS_REPORT.csv"))
+
+cat("\n╔════════════════════════════════════════════════════════════════════════════╗\n")
+cat(sprintf("║  GATE STATUS SUMMARY: %s                                         ║\n",
+            toupper(release_status)))
+cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
+
+print(gate_status_report)
+cat("\n")
+
 if (gates_failed > 0) {
   cat("BLOCKER GATES FAILED:\n")
   print(gates_log)
-  cat("\nFinal Report cannot be released until gates are fixed.\n\n")
+  cat("\nFinal Report cannot be released until gates are fixed.\n")
+  cat("Release Status: BLOCKED\n\n")
   quit(save = "no", status = 1)
 } else {
-  cat("✓ All gates PASSED - Final Report can proceed\n\n")
+  cat("✓ All gates PASSED\n")
+  cat("Release Status: EXPLORATORY (2025 discovery phase)\n")
+  cat("Final Report can proceed - outputs marked as exploratory\n\n")
   quit(save = "no", status = 0)
 }
 

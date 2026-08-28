@@ -269,19 +269,44 @@ cat(sprintf("✓ Master summary saved: %s\n\n", summary_file))
 # ═════════════════════════════════════════════════════════════════════════════
 
 cat("\n")
-cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
-cat("║  PIPELINE COMPLETE: ALL 10 PHASES EXECUTED SUCCESSFULLY                  ║\n")
-cat("║                                                                            ║\n")
-cat("║  Status: ✓ READY FOR DISSERTATION                                         ║\n")
-cat("║                                                                            ║\n")
-cat("║  All results are:                                                          ║\n")
-cat("║  • Fully reproducible (code + data in version control)                    ║\n")
-cat("║  • Completely transparent (all diagnostics documented)                    ║\n")
-cat("║  • Bayesian-validated (full convergence checks + PPC + LOO)               ║\n")
-cat("║  • PhD-rigorous (audit-compliant methodology)                             ║\n")
-cat("║                                                                            ║\n")
-cat("║  Next: Review output files and integrate into dissertation chapter        ║\n")
-cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
+
+# AUDIT R-02: Read actual gate status - don't hardcode
+gate_status <- tryCatch(
+  read_csv(file.path(output_base, "GATE_STATUS_REPORT.csv"), show_col_types = FALSE),
+  error = function(e) {
+    cat("⚠ WARNING: Cannot read gate status - marking EXPLORATORY\n")
+    tibble(release_status = "exploratory_only", can_publish_results = FALSE)
+  }
+)
+
+release_status <- gate_status$release_status[1]
+
+# Generate closing based on ACTUAL gate results
+if (release_status == "blocked") {
+  cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
+  cat("║  ✗ GATE VALIDATION FAILED - ANALYSIS BLOCKED                             ║\n")
+  cat("║  Status: BLOCKED – Cannot release results                                ║\n")
+  cat("║  Action: Fix gate failures and re-run                                    ║\n")
+  cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
+} else {
+  cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
+  cat("║  ✓ PIPELINE COMPLETE: ALL 10 PHASES EXECUTED SUCCESSFULLY                  ║\n")
+  cat("║                                                                            ║\n")
+  cat("║  Status: EXPLORATORY (2025 Discovery Phase)                              ║\n")
+  cat("║                                                                            ║\n")
+  cat("║  ⚠ IMPORTANT LIMITATION:                                                 ║\n")
+  cat("║  • 2025 data: exploratory/hypothesis-generating ONLY                      ║\n")
+  cat("║  • Do NOT cite p-values or significance claims                            ║\n")
+  cat("║  • Must be confirmed in 2026 confirmatory phase                           ║\n")
+  cat("║                                                                            ║\n")
+  cat("║  Results follow PhD-rigorous standards:                                   ║\n")
+  cat("║  • Code fully version-controlled                                          ║\n")
+  cat("║  • All diagnostics documented and transparent                             ║\n")
+  cat("║  • Audit-compliant methodology                                            ║\n")
+  cat("║                                                                            ║\n")
+  cat("║  Next: Use for hypothesis development; plan confirmatory 2026 analysis    ║\n")
+  cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
+}
 
 cat("Output directory: ", output_base, "\n\n")
 
