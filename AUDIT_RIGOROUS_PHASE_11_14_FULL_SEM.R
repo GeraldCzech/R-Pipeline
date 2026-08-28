@@ -107,9 +107,7 @@ sem_fit <- blavaan(
   n.chains = 4,
   n.iter = 6000,
   n.burnin = 3000,
-  n.adapt = 2000,
-  save.lvs = TRUE,
-  sample.cov = TRUE
+  save.lvs = TRUE
 )
 
 cat("✓ Full Bayesian SEM fitted\n\n")
@@ -152,7 +150,7 @@ sem_mg_donor <- bcfa(
   group.equal = "loadings",  # Metric invariance
   n.chains = 4,
   n.iter = 4000,
-  n.burnup = 2000
+  n.burnin = 2000
 )
 
 cat("✓ Multigroup by Donor Status complete\n")
@@ -179,7 +177,7 @@ sem_mg_org <- bcfa(
   group.equal = "loadings",
   n.chains = 4,
   n.iter = 4000,
-  n.burnup = 2000
+  n.burnin = 2000
 )
 
 cat("✓ Multigroup by Organization Size complete\n")
