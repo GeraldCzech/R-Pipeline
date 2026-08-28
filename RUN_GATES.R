@@ -49,7 +49,7 @@ required_files <- c(
 
 # P0-02 FIX: Check files are in CURRENT RUN output directory with recent timestamps
 all_files_exist <- TRUE
-run_start_time <- Sys.time() - 300  # Allow 5 minute window for run
+run_start_time <- Sys.time() - 1800  # Allow 30 minute window for full pipeline run (Bayesian phase takes time)
 
 for (file in required_files) {
   fpath <- file.path(output_base, file)
