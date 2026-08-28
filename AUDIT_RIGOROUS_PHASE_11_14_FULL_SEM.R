@@ -34,7 +34,8 @@ cat("╚════════════════════════
 
 # Load data from earlier phases
 data_analysis <- readRDS(file.path(output_base, "00_DATA_ANALYSIS_CLEAN.rds"))
-cfa_fit <- readRDS(file.path(output_base, "04_CFA_FIT_INDICES.csv"))
+cfa_fit_indices <- read_csv(file.path(output_base, "04_CFA_FIT_INDICES.csv"),
+                            show_col_types = FALSE)
 
 set.seed(42)
 
