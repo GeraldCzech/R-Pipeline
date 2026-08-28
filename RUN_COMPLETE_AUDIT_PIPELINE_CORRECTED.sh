@@ -38,6 +38,11 @@ log() {
   echo -e "${BLUE}[${timestamp}]${NC} ${msg}" | tee -a "$RUN_LOG"
 }
 
+# P0-FIX: EXPORT RUN_OUTPUT_DIR for all R scripts (NO ISOLATION otherwise)
+export RUN_OUTPUT_DIR="$OUTPUT_DIR"
+export RUN_ID="$RUN_ID"
+export COMMIT_HASH="$COMMIT_HASH"
+
 log_success() {
   local phase="$1"
   echo -e "${GREEN}✓${NC} ${phase} COMPLETE" | tee -a "$RUN_LOG"
@@ -79,7 +84,7 @@ START_TIME=$(date +%s)
 log ""
 log "PREFLIGHT: Detecting P0 blockers..."
 
-if Rscript "${BASE_DIR}/00_PREFLIGHT_AUDIT.R" >> "${LOG_DIR}/preflight.log" 2>&1; then
+if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "${BASE_DIR}/00_PREFLIGHT_AUDIT.R" >> "${LOG_DIR}/preflight.log" 2>&1; then
   log_success "PREFLIGHT (P0 Checks)"
 else
   log_error "PREFLIGHT" "P0 blockers detected - see ${LOG_DIR}/preflight.log"
@@ -93,7 +98,7 @@ log ""
 
 log "RECONSTRUCTION MODULE 1: Person-ID Reconstruction (P0-03)..."
 
-if Rscript "${BASE_DIR}/01_PERSON_ID_RECONSTRUCTION.R" >> "${LOG_DIR}/reconstruction_01.log" 2>&1; then
+if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "${BASE_DIR}/01_PERSON_ID_RECONSTRUCTION.R" >> "${LOG_DIR}/reconstruction_01.log" 2>&1; then
   log_success "RECONSTRUCTION 01 (Person-ID with evaluation_id)"
 else
   log_error "RECONSTRUCTION 01" "See ${LOG_DIR}/reconstruction_01.log"
@@ -107,7 +112,7 @@ log ""
 
 log "RECONSTRUCTION MODULE 2: Outcome Parser (P0-04)..."
 
-if Rscript "${BASE_DIR}/01_ANALYSIS_INPUT_VALIDATION.R" >> "${LOG_DIR}/reconstruction_02.log" 2>&1; then
+if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "${BASE_DIR}/01_ANALYSIS_INPUT_VALIDATION.R" >> "${LOG_DIR}/reconstruction_02.log" 2>&1; then
   log_success "RECONSTRUCTION 02 (Outcome with Audit Trail)"
 else
   log_error "RECONSTRUCTION 02" "See ${LOG_DIR}/reconstruction_02.log"
@@ -121,7 +126,7 @@ log ""
 
 log "PHASE 0-3: Master Pipeline (Corrected)"
 
-if Rscript "${BASE_DIR}/AUDIT_RIGOROUS_MASTER_PIPELINE_CORRECTED.R" >> "${LOG_DIR}/phase_0_3.log" 2>&1; then
+if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "${BASE_DIR}/AUDIT_RIGOROUS_MASTER_PIPELINE_CORRECTED.R" >> "${LOG_DIR}/phase_0_3.log" 2>&1; then
   log_success "PHASE 0-3"
 else
   log_error "PHASE 0-3" "See ${LOG_DIR}/phase_0_3.log"
@@ -135,7 +140,7 @@ log ""
 
 log "PHASE 4-7: CFA & Multilevel GLMMs..."
 
-if Rscript "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_4_7_CFA_GLMM.R" >> "${LOG_DIR}/phase_4_7.log" 2>&1; then
+if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_4_7_CFA_GLMM.R" >> "${LOG_DIR}/phase_4_7.log" 2>&1; then
   log_success "PHASE 4-7"
 else
   log_error "PHASE 4-7" "See ${LOG_DIR}/phase_4_7.log"
@@ -151,7 +156,7 @@ log "PHASE 8-9: Bayesian Validation with Full Diagnostics"
 log "  WARNING: This phase takes 30-60 minutes"
 log ""
 
-if Rscript "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_8_9_BAYESIAN.R" >> "${LOG_DIR}/phase_8_9.log" 2>&1; then
+if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_8_9_BAYESIAN.R" >> "${LOG_DIR}/phase_8_9.log" 2>&1; then
   log_success "PHASE 8-9"
 else
   log_error "PHASE 8-9" "See ${LOG_DIR}/phase_8_9.log"
@@ -165,7 +170,7 @@ log ""
 
 log "RUN GATES: P1 Validation (Bayesian Diagnostics, Reporting, etc.)..."
 
-if Rscript "${BASE_DIR}/RUN_GATES.R" >> "${LOG_DIR}/run_gates.log" 2>&1; then
+if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "${BASE_DIR}/RUN_GATES.R" >> "${LOG_DIR}/run_gates.log" 2>&1; then
   log_success "RUN GATES (P1 Checks)"
 else
   log_error "RUN GATES" "P1 checks failed - see ${LOG_DIR}/run_gates.log"
@@ -179,7 +184,7 @@ log ""
 
 log "PHASE 10: Final Results Synthesis..."
 
-if Rscript "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_10_FINAL_REPORT.R" >> "${LOG_DIR}/phase_10.log" 2>&1; then
+if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_10_FINAL_REPORT.R" >> "${LOG_DIR}/phase_10.log" 2>&1; then
   log_success "PHASE 10"
 else
   log_error "PHASE 10" "See ${LOG_DIR}/phase_10.log"
