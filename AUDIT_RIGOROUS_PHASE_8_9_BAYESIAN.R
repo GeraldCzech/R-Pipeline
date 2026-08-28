@@ -12,6 +12,7 @@ library(tidyverse)
 library(brms)
 library(bayesplot)
 library(here)
+library(yaml)
 
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
@@ -83,23 +84,30 @@ cat("CONVERGENCE DIAGNOSTICS:\n")
 cat("─────────────────────────────────────────────────────────────────────────────\n\n")
 
 # Extract convergence info
+# AUDIT M-03 FIX: Separate ESS calculations
+rhat_val <- max(bayesplot::rhat(bayes_binary$fit), na.rm = TRUE)
+draws_binary <- as_draws_array(bayes_binary)
+bulk_ess <- round(min(ess_bulk(draws_binary), na.rm = TRUE), 0)
+tail_ess <- round(min(ess_tail(draws_binary), na.rm = TRUE), 0)
+divergences_val <- sum(bayes_binary$fit@sim$divergences[[1]]) +
+  sum(bayes_binary$fit@sim$divergences[[2]]) +
+  sum(bayes_binary$fit@sim$divergences[[3]]) +
+  sum(bayes_binary$fit@sim$divergences[[4]])
+
 conv_summary <- tibble(
   diagnostic = c("Rhat (max)", "Bulk_ESS (min)", "Tail_ESS (min)", "Divergences"),
   value = c(
-    round(max(bayesplot::rhat(bayes_binary$fit), na.rm = TRUE), 4),
-    round(min(neff_ratio(bayes_binary), na.rm = TRUE) * 4000, 0),
-    round(min(neff_ratio(bayes_binary), na.rm = TRUE) * 4000, 0),
-    sum(bayes_binary$fit@sim$divergences[[1]]) +
-      sum(bayes_binary$fit@sim$divergences[[2]]) +
-      sum(bayes_binary$fit@sim$divergences[[3]]) +
-      sum(bayes_binary$fit@sim$divergences[[4]])
+    round(rhat_val, 4),
+    bulk_ess,
+    tail_ess,
+    divergences_val
   ),
   threshold = c("< 1.01", "> 400", "> 400", "0"),
   status = c(
-    ifelse(max(bayesplot::rhat(bayes_binary$fit), na.rm = TRUE) < 1.01, "✓", "✗"),
-    "✓",  # Will check manually
-    "✓",  # Will check manually
-    "✓"   # Will check manually
+    ifelse(rhat_val < 1.01, "✓", "✗"),
+    ifelse(bulk_ess > 400, "✓", "✗"),
+    ifelse(tail_ess > 400, "✓", "✗"),
+    ifelse(divergences_val == 0, "✓", "✗")
   )
 )
 

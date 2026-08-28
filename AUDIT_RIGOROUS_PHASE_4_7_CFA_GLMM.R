@@ -9,6 +9,7 @@ library(lavaan)
 library(lme4)
 library(performance)
 library(here)
+library(yaml)
 
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")

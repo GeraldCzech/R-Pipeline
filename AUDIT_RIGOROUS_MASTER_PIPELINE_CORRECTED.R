@@ -49,7 +49,7 @@ cat(sprintf("  Output dir: %s\n\n", output_base))
 cat("PHASE 0: DATA INTEGRITY & PROVENANCE\n")
 cat("═════════════════════════════════════════════════════════════════════════════\n\n")
 
-fragebogen_path <- "/home/gerald/10787172/fragebogen_cache_v5.rds"
+fragebogen_path <- config$input$fragebogen_cache
 
 if (!file.exists(fragebogen_path)) {
   stop(sprintf("BLOCKER: fragebogen file not found at %s", fragebogen_path))
