@@ -32,9 +32,10 @@ cat("║  AUDIT-RIGOROUS MASTER PIPELINE (CORRECTED - P0 Fixes)                 
 cat("║  Phase 0-3: Data Integrity, Person-ID, Outcome Validation                ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
-# I-01 FIX: Use here() instead of hardcoded paths
-base_dir <- here::here()
-output_base <- file.path(base_dir, config$analysis$base_dir)
+# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator environment variable
+# This ensures run isolation - each run gets its own output directory
+output_base <- Sys.getenv("RUN_OUTPUT_DIR")
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 dir.create(output_base, showWarnings = FALSE, recursive = TRUE)
 
 cat("Session Info:\n")

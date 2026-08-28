@@ -38,7 +38,8 @@ scripts_to_test <- c(
   "RUN_GATES.R"
 )
 
-base_dir <- "/home/gerald/R-pipeline"
+# P0-01 FIX: Use environment variables for portability
+base_dir <- Sys.getenv("PWD", "/home/gerald/R-pipeline")  # fallback to hardcoded if not set
 
 for (script in scripts_to_test) {
   script_path <- file.path(base_dir, script)

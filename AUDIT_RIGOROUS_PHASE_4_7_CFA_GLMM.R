@@ -16,10 +16,9 @@ cat("╔════════════════════════
 cat("║  PHASE 4-7: CFA + MULTILEVEL GLMMs                                       ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
-# Paths
-base_dir <- here::here()
-config <- yaml::read_yaml(here::here("config.yml"))
-output_base <- file.path(base_dir, config$analysis$base_dir)
+# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator
+output_base <- Sys.getenv("RUN_OUTPUT_DIR")
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 
 # Load clean data
 data_analysis_file <- file.path(output_base, "00_DATA_ANALYSIS_CLEAN.rds")

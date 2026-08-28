@@ -13,10 +13,25 @@ cat("╔════════════════════════
 cat("║  PHASE 10: FINAL RESULTS SYNTHESIS & REPORTING                           ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
-# Paths
-base_dir <- here::here()
-config <- yaml::read_yaml(here::here("config.yml"))
-output_base <- file.path(base_dir, config$analysis$base_dir)
+# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator
+output_base <- Sys.getenv("RUN_OUTPUT_DIR")
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
+
+# P0-06 FIX: CHECK GATE STATUS BEFORE generating report
+cat("P0-06: Checking gate status before report generation...\n")
+gate_status_file <- file.path(output_base, "GATE_STATUS_REPORT.csv")
+if (!file.exists(gate_status_file)) {
+  cat("✗ GATES NOT PASSED - No gate status report found\n")
+  cat("Report generation blocked\n")
+  quit(save="no", status=1)
+}
+gate_status <- read_csv(gate_status_file, show_col_types=FALSE)
+if (nrow(gate_status) == 0 || gate_status$release_status[1] == "blocked") {
+  cat("✗ GATES NOT PASSED - Analysis is BLOCKED\n")
+  cat("Report generation blocked until gates pass\n")
+  quit(save="no", status=1)
+}
+cat("✓ Gates passed - Report generation proceeding\n\n")
 
 # ═════════════════════════════════════════════════════════════════════════════
 # LOAD ALL RESULTS

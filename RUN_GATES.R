@@ -18,7 +18,9 @@ cat("║  RUN GATES: P1 VALIDATION CHECKS                                       
 cat("║  Hard gates must pass before Phase 10 reporting allowed                   ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
-output_base <- "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS"
+# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator
+output_base <- Sys.getenv("RUN_OUTPUT_DIR")
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 
 gates_passed <- 0
 gates_failed <- 0
@@ -43,11 +45,21 @@ required_files <- c(
   "bayes_amount_POSTERIOR_DRAWS.csv"
 )
 
+# P0-02 FIX: Check files are in CURRENT RUN output directory with recent timestamps
 all_files_exist <- TRUE
+run_start_time <- Sys.time() - 300  # Allow 5 minute window for run
+
 for (file in required_files) {
   fpath <- file.path(output_base, file)
   if (file.exists(fpath)) {
-    cat(sprintf("  ✓ %s\n", file))
+    file_mtime <- file.mtime(fpath)
+    if (is.na(file_mtime) || file_mtime < run_start_time) {
+      cat(sprintf("  ✗ %s EXISTS but old (not from this run)\n", file))
+      all_files_exist <- FALSE
+      gates_failed <- gates_failed + 1
+    } else {
+      cat(sprintf("  ✓ %s (current run)\n", file))
+    }
   } else {
     cat(sprintf("  ✗ %s MISSING\n", file))
     all_files_exist <- FALSE
@@ -224,7 +236,8 @@ if (file.exists(bayes_diag_file)) {
   cat("Hard thresholds: Rhat < 1.01, Divergences < 5 (strict)\n\n")
 
   rhat_ok <- all(bayes_diag$rhat_max < 1.01)
-  div_ok <- all(bayes_diag$divergences < 5)  # Strict: no divergences tolerated
+  # P0-03 FIX: EXACT zero divergences, not < 5
+  div_ok <- all(bayes_diag$divergences == 0)
 
   cat(sprintf("Rhat check (< 1.01): %s\n", ifelse(rhat_ok, "✓ PASS", "✗ FAIL")))
   cat(sprintf("Divergences check (< 5): %s\n", ifelse(div_ok, "✓ PASS", "✗ FAIL")))

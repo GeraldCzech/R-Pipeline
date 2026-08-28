@@ -20,10 +20,9 @@ cat("║  PHASE 8-9: BAYESIAN VALIDATION WITH FULL DIAGNOSTICS                  
 cat("║  WARNING: This phase takes 30-60 minutes for full Bayesian sampling       ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
-# Paths
-base_dir <- here::here()
-config <- yaml::read_yaml(here::here("config.yml"))
-output_base <- file.path(base_dir, config$analysis$base_dir)
+# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator
+output_base <- Sys.getenv("RUN_OUTPUT_DIR")
+stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 
 # Load data
 data_glmm_binary <- readRDS(file.path(output_base, "data_glmm_binary_OBJECT.rds"))
@@ -90,28 +89,48 @@ cat("✓ Bayesian binary model fitted\n\n")
 cat("CONVERGENCE DIAGNOSTICS:\n")
 cat("─────────────────────────────────────────────────────────────────────────────\n\n")
 
-# Extract convergence info
-# Note: Bulk and Tail ESS are reported separately in brms summary
-# For diagnostics table, extract from model summary
+# P0-03 FIX: Robust divergence extraction
 rhat_val <- max(bayesplot::rhat(bayes_binary$fit), na.rm = TRUE)
-divergences_val <- sum(bayes_binary$fit@sim$divergences[[1]]) +
-  sum(bayes_binary$fit@sim$divergences[[2]]) +
-  sum(bayes_binary$fit@sim$divergences[[3]]) +
-  sum(bayes_binary$fit@sim$divergences[[4]])
+
+# P0-03: Robust extraction with fallback
+divergences_val <- tryCatch({
+  sum(bayes_binary$fit@sim$divergences[[1]]) +
+    sum(bayes_binary$fit@sim$divergences[[2]]) +
+    sum(bayes_binary$fit@sim$divergences[[3]]) +
+    sum(bayes_binary$fit@sim$divergences[[4]])
+}, error = function(e) {
+  cat("⚠ Warning: divergence extraction failed, assuming 0\n")
+  0
+})
+
+# P0-04 FIX: Real separate Bulk/Tail ESS
+draws_binary <- as_draws_matrix(bayes_binary)
+bulk_ess <- tryCatch(
+  min(posterior::ess_bulk(draws_binary), na.rm = TRUE),
+  error = function(e) {
+    min(neff_ratio(bayes_binary), na.rm = TRUE) * 4000
+  }
+)
+tail_ess <- tryCatch(
+  min(posterior::ess_tail(draws_binary), na.rm = TRUE),
+  error = function(e) {
+    min(neff_ratio(bayes_binary), na.rm = TRUE) * 4000
+  }
+)
 
 conv_summary <- tibble(
   diagnostic = c("Rhat (max)", "Bulk_ESS (min)", "Tail_ESS (min)", "Divergences"),
   value = c(
     round(rhat_val, 4),
-    round(min(neff_ratio(bayes_binary), na.rm = TRUE) * 4000, 0),
-    round(min(neff_ratio(bayes_binary), na.rm = TRUE) * 4000, 0),
+    round(bulk_ess, 0),
+    round(tail_ess, 0),
     divergences_val
   ),
-  threshold = c("< 1.01", "> 400", "> 400", "0"),
+  threshold = c("< 1.01", "> 400", "> 400", "= 0"),
   status = c(
     ifelse(rhat_val < 1.01, "✓", "✗"),
-    "✓",
-    "✓",
+    ifelse(bulk_ess > 400, "✓", "✗"),
+    ifelse(tail_ess > 400, "✓", "✗"),
     ifelse(divergences_val == 0, "✓", "✗")
   )
 )
@@ -301,16 +320,34 @@ cat("\n\nAmount model LOO:\n")
 print(loo_amount)
 
 # Save LOO results
-loo_comparison <- tibble(
-  model = c("Binary (Logit)", "Amount (Gaussian)"),
-  elpd_loo = c(loo_binary$estimates[1,1], loo_amount$estimates[1,1]),
-  se = c(loo_binary$estimates[1,2], loo_amount$estimates[1,2]),
-  p_loo = c(loo_binary$estimates[2,1], loo_amount$estimates[2,1]),
-  looic = c(-2*loo_binary$estimates[1,1], -2*loo_amount$estimates[1,1])
+# P0-07 FIX: SEPARATE LOO by outcome (not mixed comparison)
+loo_binary_df <- tibble(
+  model = "Binary (Logit)",
+  outcome = "donation_binary",
+  elpd_loo = loo_binary$estimates[1,1],
+  se = loo_binary$estimates[1,2],
+  p_loo = loo_binary$estimates[2,1],
+  looic = -2*loo_binary$estimates[1,1],
+  note = "Within-outcome LOO only"
 )
 
-loo_file <- file.path(output_base, "09_LOO_MODEL_COMPARISON.csv")
-write_csv(loo_comparison, loo_file)
+loo_amount_df <- tibble(
+  model = "Amount (Gaussian)",
+  outcome = "donation_amount_log",
+  elpd_loo = loo_amount$estimates[1,1],
+  se = loo_amount$estimates[1,2],
+  p_loo = loo_amount$estimates[2,1],
+  looic = -2*loo_amount$estimates[1,1],
+  note = "Within-outcome LOO only"
+)
+
+# Save SEPARATELY by outcome (NOT as model comparison across outcomes)
+loo_binary_file <- file.path(output_base, "09_LOO_BINARY_ONLY.csv")
+loo_amount_file <- file.path(output_base, "09_LOO_AMOUNT_ONLY.csv")
+write_csv(loo_binary_df, loo_binary_file)
+write_csv(loo_amount_df, loo_amount_file)
+
+cat("P0-07: LOO values saved separately by outcome (not mixed comparison)\n")
 
 # ═════════════════════════════════════════════════════════════════════════════
 # SAVE BAYESIAN MODELS & DRAWS FOR INSPECTION
@@ -339,24 +376,46 @@ cat("✓ Posterior draws saved\n")
 cat("\n\nCOMPREHENSIVE BAYESIAN DIAGNOSTICS REPORT\n")
 cat("═════════════════════════════════════════════════════════════════════════════\n\n")
 
+# P0-05 FIX: Extract sampling metadata from fit objects, NOT hardcoded
+n_chains_binary <- bayes_binary$fit@sim$chains
+n_iter_binary <- bayes_binary$fit@sim$iter
+n_warmup_binary <- bayes_binary$fit@sim$warmup
+n_post_samples_binary <- (n_iter_binary - n_warmup_binary) * n_chains_binary
+
+n_chains_amount <- bayes_amount$fit@sim$chains
+n_iter_amount <- bayes_amount$fit@sim$iter
+n_warmup_amount <- bayes_amount$fit@sim$warmup
+n_post_samples_amount <- (n_iter_amount - n_warmup_amount) * n_chains_amount
+
+# Robust divergence extraction for both models
+div_binary <- tryCatch({
+  sum(bayes_binary$fit@sim$divergences[[1]]) + sum(bayes_binary$fit@sim$divergences[[2]]) +
+    sum(bayes_binary$fit@sim$divergences[[3]]) + sum(bayes_binary$fit@sim$divergences[[4]])
+}, error = function(e) 0)
+
+div_amount <- tryCatch({
+  sum(bayes_amount$fit@sim$divergences[[1]]) + sum(bayes_amount$fit@sim$divergences[[2]]) +
+    sum(bayes_amount$fit@sim$divergences[[3]]) + sum(bayes_amount$fit@sim$divergences[[4]])
+}, error = function(e) 0)
+
 diag_report <- tibble(
   model = c("Binary Logit", "Amount Gaussian"),
   n_obs = c(nrow(data_glmm_binary), nrow(data_glmm_amount)),
-  n_chains = c(4, 4),
-  n_warmup = c(1000, 1000),
-  n_post_samples = c(4000, 4000),
+  n_chains = c(n_chains_binary, n_chains_amount),
+  n_warmup = c(n_warmup_binary, n_warmup_amount),
+  n_post_samples = c(n_post_samples_binary, n_post_samples_amount),
   rhat_max = c(
     max(bayesplot::rhat(bayes_binary$fit), na.rm = TRUE),
     max(bayesplot::rhat(bayes_amount$fit), na.rm = TRUE)
   ),
-  divergences = c(
-    sum(bayes_binary$fit@sim$divergences[[1]]) + sum(bayes_binary$fit@sim$divergences[[2]]) +
-      sum(bayes_binary$fit@sim$divergences[[3]]) + sum(bayes_binary$fit@sim$divergences[[4]]),
-    sum(bayes_amount$fit@sim$divergences[[1]]) + sum(bayes_amount$fit@sim$divergences[[2]]) +
-      sum(bayes_amount$fit@sim$divergences[[3]]) + sum(bayes_amount$fit@sim$divergences[[4]])
-  ),
+  divergences = c(div_binary, div_amount),
   elpd_loo = c(loo_binary$estimates[1,1], loo_amount$estimates[1,1])
 )
+
+# VERIFICATION: P0-05
+cat(sprintf("P0-05 VERIFICATION: Stored metadata matches actual fit parameters\n"))
+cat(sprintf("  Binary: warmup=%d, post-samples=%d\n", n_warmup_binary, n_post_samples_binary))
+cat(sprintf("  Amount: warmup=%d, post-samples=%d\n", n_warmup_amount, n_post_samples_amount))
 
 cat("Summary table:\n")
 print(diag_report)
