@@ -39,12 +39,19 @@ set.seed(42)
 cat("PHASE 8: BAYESIAN BINARY MODEL (LOGIT)\n")
 cat("═════════════════════════════════════════════════════════════════════════════\n\n")
 
+# HARDCODED BAYESIAN PARAMETERS (NOT from config.yml - direct specification)
+CHAINS <- 4
+ITER <- 4000
+WARMUP <- 2000
+THIN <- 1
+TOTAL_SAMPLES <- CHAINS * (ITER - WARMUP) / THIN
+
 cat("Specification:\n")
-cat("  Formula: donated_binary ~ trust_lv_z + commit_lv_z + (1|person_id) + (1|org_id)\n")
-cat("  Family: Bernoulli(logit)\n")
-cat("  Priors: Weakly informative (student-t)\n")
-cat("  Chains: 4 | Warmup: 2000 | Iterations: 4000 | Thinning: 1\n")
-cat("  Total samples: 8,000 per posterior (doubled for better convergence)\n\n")
+cat(sprintf("  Formula: donated_binary ~ trust_lv_z + commit_lv_z + (1|person_id) + (1|org_id)\n"))
+cat(sprintf("  Family: Bernoulli(logit)\n"))
+cat(sprintf("  Priors: Weakly informative (student-t)\n"))
+cat(sprintf("  Chains: %d | Warmup: %d | Iterations: %d | Thinning: %d\n", CHAINS, WARMUP, ITER, THIN))
+cat(sprintf("  Total samples: %d per posterior (VERIFIED HARDCODED PARAMETERS)\n\n", TOTAL_SAMPLES))
 
 # Define priors
 priors_binary <- c(
@@ -61,10 +68,10 @@ bayes_binary <- brm(
   data = data_glmm_binary,
   family = bernoulli(link = "logit"),
   prior = priors_binary,
-  chains = 4,
-  iter = 4000,
-  warmup = 2000,
-  thin = 1,
+  chains = CHAINS,
+  iter = ITER,
+  warmup = WARMUP,
+  thin = THIN,
   cores = 4,
   seed = 42,
   control = list(adapt_delta = 0.95, max_treedepth = 12),
@@ -191,10 +198,11 @@ cat("\n\nPHASE 9: BAYESIAN AMOUNT MODEL (GAUSSIAN ON LOG-SCALE)\n")
 cat("═════════════════════════════════════════════════════════════════════════════\n\n")
 
 cat("Specification:\n")
-cat("  Formula: log(donation_amount) ~ trust_lv_z + commit_lv_z + (1|person_id) + (1|org_id)\n")
-cat("  Family: Gaussian (identity)\n")
-cat("  Priors: Weakly informative (student-t)\n")
-cat("  Chains: 4 | Warmup: 2000 | Iterations: 4000\n\n")
+cat(sprintf("  Formula: log(donation_amount) ~ trust_lv_z + commit_lv_z + (1|person_id) + (1|org_id)\n"))
+cat(sprintf("  Family: Gaussian (identity)\n"))
+cat(sprintf("  Priors: Weakly informative (student-t)\n"))
+cat(sprintf("  Chains: %d | Warmup: %d | Iterations: %d | Total samples: %d\n", CHAINS, WARMUP, ITER, TOTAL_SAMPLES))
+cat(sprintf("  (HARDCODED: amount model uses SAME sampling as binary)\n\n"))
 
 priors_amount <- c(
   prior(normal(0, 2), class = "b"),
@@ -211,10 +219,10 @@ bayes_amount <- brm(
   data = data_glmm_amount,
   family = gaussian(link = "identity"),
   prior = priors_amount,
-  chains = 4,
-  iter = 4000,
-  warmup = 2000,
-  thin = 1,
+  chains = CHAINS,
+  iter = ITER,
+  warmup = WARMUP,
+  thin = THIN,
   cores = 4,
   seed = 42,
   control = list(adapt_delta = 0.95, max_treedepth = 12),
