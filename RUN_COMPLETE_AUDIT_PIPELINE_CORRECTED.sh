@@ -11,16 +11,14 @@ RUN_LOG="${LOG_DIR}/RUN_${RUN_ID}.log"
 mkdir -p "$LOG_DIR" "$OUTPUT_DIR"
 
 run_phase() {
-  local phase_name="$1"
+  local phase="$1"
   local script="$2"
-  local log_file="$3"
-  
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $phase_name" | tee -a "$RUN_LOG"
-  
-  if RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "$script" >> "$log_file" 2>&1; then
-    echo "✓ $phase_name COMPLETE" | tee -a "$RUN_LOG"
+  local log="$3"
+  RUN_OUTPUT_DIR="$OUTPUT_DIR" Rscript "$script" >> "$log" 2>&1
+  if [ $? -eq 0 ]; then
+    echo "✓ $phase COMPLETE" | tee -a "$RUN_LOG"
   else
-    echo "✗ $phase_name FAILED" | tee -a "$RUN_LOG"
+    echo "✗ $phase FAILED" | tee -a "$RUN_LOG"
     exit 1
   fi
 }
