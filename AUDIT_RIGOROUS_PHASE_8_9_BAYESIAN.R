@@ -43,8 +43,8 @@ cat("Specification:\n")
 cat("  Formula: donated_binary ~ trust_lv_z + commit_lv_z + (1|person_id) + (1|org_id)\n")
 cat("  Family: Bernoulli(logit)\n")
 cat("  Priors: Weakly informative (student-t)\n")
-cat("  Chains: 4 | Warmup: 1000 | Iterations: 2000 | Thinning: 1\n")
-cat("  Total samples: 4,000 per posterior\n\n")
+cat("  Chains: 4 | Warmup: 2000 | Iterations: 4000 | Thinning: 1\n")
+cat("  Total samples: 8,000 per posterior (doubled for better convergence)\n\n")
 
 # Define priors
 priors_binary <- c(
@@ -53,7 +53,7 @@ priors_binary <- c(
   prior(normal(0, 1.5), class = "Intercept")     # Intercept
 )
 
-cat("Fitting Bayesian binary model (this may take 5-10 minutes)...\n")
+cat("Fitting Bayesian binary model (this may take 10-15 minutes)...\n")
 
 bayes_binary <- brm(
   donated_binary ~ trust_lv_z + commit_lv_z +
@@ -62,8 +62,8 @@ bayes_binary <- brm(
   family = bernoulli(link = "logit"),
   prior = priors_binary,
   chains = 4,
-  iter = 2000,
-  warmup = 1000,
+  iter = 4000,
+  warmup = 2000,
   thin = 1,
   cores = 4,
   seed = 42,
@@ -194,7 +194,7 @@ cat("Specification:\n")
 cat("  Formula: log(donation_amount) ~ trust_lv_z + commit_lv_z + (1|person_id) + (1|org_id)\n")
 cat("  Family: Gaussian (identity)\n")
 cat("  Priors: Weakly informative (student-t)\n")
-cat("  Chains: 4 | Warmup: 1000 | Iterations: 2000\n\n")
+cat("  Chains: 4 | Warmup: 2000 | Iterations: 4000\n\n")
 
 priors_amount <- c(
   prior(normal(0, 2), class = "b"),
@@ -203,7 +203,7 @@ priors_amount <- c(
   prior(exponential(1), class = "sigma")
 )
 
-cat("Fitting Bayesian amount model (this may take 5-10 minutes)...\n")
+cat("Fitting Bayesian amount model (this may take 10-15 minutes)...\n")
 
 bayes_amount <- brm(
   donation_amount_log ~ trust_lv_z + commit_lv_z +
@@ -212,8 +212,8 @@ bayes_amount <- brm(
   family = gaussian(link = "identity"),
   prior = priors_amount,
   chains = 4,
-  iter = 2000,
-  warmup = 1000,
+  iter = 4000,
+  warmup = 2000,
   thin = 1,
   cores = 4,
   seed = 42,
