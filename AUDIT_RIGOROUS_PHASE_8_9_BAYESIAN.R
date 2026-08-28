@@ -41,9 +41,10 @@ cat("PHASE 8: BAYESIAN BINARY MODEL (LOGIT)\n")
 cat("═════════════════════════════════════════════════════════════════════════════\n\n")
 
 # HARDCODED BAYESIAN PARAMETERS (NOT from config.yml - direct specification)
+# INCREASED for better convergence diagnostics (G5 gate requirement)
 CHAINS <- 4
-ITER <- 4000
-WARMUP <- 2000
+ITER <- 6000
+WARMUP <- 3000
 THIN <- 1
 TOTAL_SAMPLES <- CHAINS * (ITER - WARMUP) / THIN
 
@@ -52,7 +53,7 @@ cat(sprintf("  Formula: donated_binary ~ trust_lv_z + commit_lv_z + (1|person_id
 cat(sprintf("  Family: Bernoulli(logit)\n"))
 cat(sprintf("  Priors: Weakly informative (student-t)\n"))
 cat(sprintf("  Chains: %d | Warmup: %d | Iterations: %d | Thinning: %d\n", CHAINS, WARMUP, ITER, THIN))
-cat(sprintf("  Total samples: %d per posterior (VERIFIED HARDCODED PARAMETERS)\n\n", TOTAL_SAMPLES))
+cat(sprintf("  Total samples: %d per posterior (INCREASED for G5 convergence)\n\n", TOTAL_SAMPLES))
 
 # Define priors
 priors_binary <- c(
