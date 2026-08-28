@@ -18,16 +18,13 @@ library(yaml)
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
 output_base <- args[1]
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+if (!nzchar(output_base)) stop("RUN_OUTPUT_DIR argument is empty")
 
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
 cat("║  PHASE 8-9: BAYESIAN VALIDATION WITH FULL DIAGNOSTICS                    ║\n")
 cat("║  WARNING: This phase takes 30-60 minutes for full Bayesian sampling       ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
-
-# P0-01 FIX: Use RUN_OUTPUT_DIR from orchestrator
-output_base <- Sys.getenv("RUN_OUTPUT_DIR")
 stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR environment variable not set")
 
 # Load data

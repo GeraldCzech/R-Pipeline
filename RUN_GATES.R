@@ -16,7 +16,7 @@ library(tidyverse)
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
 output_base <- args[1]
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+if (!nzchar(output_base)) stop("RUN_OUTPUT_DIR argument is empty")
 
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
