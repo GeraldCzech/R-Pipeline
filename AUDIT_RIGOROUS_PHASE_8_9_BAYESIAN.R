@@ -20,8 +20,9 @@ cat("║  WARNING: This phase takes 30-60 minutes for full Bayesian sampling    
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
 # Paths
-base_dir <- "/home/gerald/R-pipeline"
-output_base <- file.path(base_dir, "AUDIT_PIPELINE_OUTPUTS")
+base_dir <- here::here()
+config <- yaml::read_yaml(here::here("config.yml"))
+output_base <- file.path(base_dir, config$analysis$base_dir)
 
 # Load data
 data_glmm_binary <- readRDS(file.path(output_base, "data_glmm_binary_OBJECT.rds"))

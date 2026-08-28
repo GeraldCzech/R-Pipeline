@@ -20,8 +20,11 @@ library(tidyverse)
 library(lavaan)
 library(lme4)
 library(here)
+library(yaml)
 
-set.seed(42)
+# I-01 FIX: Load config for portable paths
+config <- yaml::read_yaml(here::here("config.yml"))
+set.seed(config$analysis$seed)
 
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
@@ -29,8 +32,9 @@ cat("║  AUDIT-RIGOROUS MASTER PIPELINE (CORRECTED - P0 Fixes)                 
 cat("║  Phase 0-3: Data Integrity, Person-ID, Outcome Validation                ║\n")
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
-base_dir <- "/home/gerald/R-pipeline"
-output_base <- file.path(base_dir, "AUDIT_PIPELINE_OUTPUTS")
+# I-01 FIX: Use here() instead of hardcoded paths
+base_dir <- here::here()
+output_base <- file.path(base_dir, config$analysis$base_dir)
 dir.create(output_base, showWarnings = FALSE, recursive = TRUE)
 
 cat("Session Info:\n")

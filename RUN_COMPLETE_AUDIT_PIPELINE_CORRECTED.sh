@@ -16,9 +16,10 @@
 set -euo pipefail
 
 BASE_DIR="/home/gerald/R-pipeline"
+COMMIT_HASH=$(git rev-parse --short HEAD)
+RUN_ID=$(date +%Y%m%d_%H%M%S)_${COMMIT_HASH}
 LOG_DIR="${BASE_DIR}/AUDIT_PIPELINE_LOGS"
-OUTPUT_DIR="${BASE_DIR}/AUDIT_PIPELINE_OUTPUTS"
-RUN_ID=$(date +%Y%m%d_%H%M%S)
+OUTPUT_DIR="${BASE_DIR}/AUDIT_PIPELINE_OUTPUTS/RUN_${RUN_ID}"
 RUN_LOG="${LOG_DIR}/RUN_${RUN_ID}.log"
 
 mkdir -p "$LOG_DIR"

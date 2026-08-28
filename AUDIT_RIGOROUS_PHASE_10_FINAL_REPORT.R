@@ -13,8 +13,9 @@ cat("║  PHASE 10: FINAL RESULTS SYNTHESIS & REPORTING                         
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
 # Paths
-base_dir <- "/home/gerald/R-pipeline"
-output_base <- file.path(base_dir, "AUDIT_PIPELINE_OUTPUTS")
+base_dir <- here::here()
+config <- yaml::read_yaml(here::here("config.yml"))
+output_base <- file.path(base_dir, config$analysis$base_dir)
 
 # ═════════════════════════════════════════════════════════════════════════════
 # LOAD ALL RESULTS

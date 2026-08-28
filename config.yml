@@ -1,0 +1,19 @@
+analysis:
+  project_root: "."
+  base_dir: "AUDIT_PIPELINE_OUTPUTS"
+  log_dir: "AUDIT_PIPELINE_LOGS"
+  seed: 42
+
+input:
+  fragebogen_cache: "/home/gerald/10787172/fragebogen_cache_v5.rds"
+
+bayesian:
+  chains: 4
+  warmup: 1000
+  iter: 2000
+  seed: 42
+
+cfa:
+  estimator: "WLSMV"
+  trust_items: ["B101_01", "B101_02", "B101_03"]
+  commitment_items: ["B102_01", "B102_02", "B102_03"]

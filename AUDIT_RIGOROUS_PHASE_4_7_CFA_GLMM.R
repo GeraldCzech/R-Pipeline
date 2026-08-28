@@ -16,8 +16,9 @@ cat("║  PHASE 4-7: CFA + MULTILEVEL GLMMs                                     
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
 # Paths
-base_dir <- "/home/gerald/R-pipeline"
-output_base <- file.path(base_dir, "AUDIT_PIPELINE_OUTPUTS")
+base_dir <- here::here()
+config <- yaml::read_yaml(here::here("config.yml"))
+output_base <- file.path(base_dir, config$analysis$base_dir)
 
 # Load clean data
 data_analysis_file <- file.path(output_base, "00_DATA_ANALYSIS_CLEAN.rds")
