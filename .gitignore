@@ -1,7 +1,40 @@
-# Large data files
+# ═══════════════════════════════════════════════════════════════════════════
+# CRITICAL: Individual-level research data and sensitive artifacts
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Individual-level datasets with personal identifiers or pseudonyms
+pipeline_data_*.csv
+pipeline_data_*.rds
+*_fc_bo.csv
+*_fc_bo.rds
+*PERSON_ORG_CROSSWALK*
+*OUTCOME_AUDIT_LOG*
+
+# Large data files (RDS, R objects)
 *.rds
 *.RData
 *.rda
+
+# Posterior draws and model objects (MCMC samples)
+*POSTERIOR_DRAWS*
+bayes_*_FIT.rds
+*_fit.rds
+
+# Run outputs and audit trails
+AUDIT_PIPELINE_OUTPUTS/
+AUDIT_PIPELINE_LOGS/
+ORCHESTRATION_RESULTS/
+PhD_RIGOROUS_RESULTS/
+results/
+backups/
+
+# Python virtual environments
+venv/
+env/
+.venv
+
+# Alternative pipeline versions (keep code only)
+v2_pipeline/
 
 # Cache and temporary
 cache/
@@ -9,6 +42,7 @@ cache/
 .Rhistory
 .Rprofile
 *.tmp
+queue/
 
 # Old experiments and drafts
 01_BLOCK*.R
@@ -30,6 +64,6 @@ cache/
 .claude/
 .git/
 
-# Results temp
+# Results temp and logs
 /tmp/
 *.log
