@@ -15,7 +15,7 @@ library(tidyverse)
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
 output_base <- args[1]
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+if (!nzchar(output_base)) stop("RUN_OUTPUT_DIR argument is empty")
 
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
@@ -23,7 +23,7 @@ cat("║  P0-04 RESOLUTION: OUTCOME PARSER & VALIDATION MODULE                  
 cat("╚════════════════════════════════════════════════════════════════════════════╝\n\n")
 
 # Load reconstruction output
-reconstruction_output <- readRDS("/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/01_RECONSTRUCTION_OUTPUT.rds")
+reconstruction_output <- readRDS(file.path(output_base, "01_RECONSTRUCTION_OUTPUT.rds"))
 fc_bo_with_ids <- reconstruction_output$fc_bo_with_ids
 
 cat("OUTCOME VARIABLE AUDIT:\n")
@@ -154,8 +154,8 @@ print(parsing_summary)
 cat("\n\nSAVING OUTCOME DATA:\n")
 cat("─────────────────────────────────────────────────────────────────────────────\n\n")
 
-saveRDS(outcome_data, "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/02_OUTCOME_DATA.rds")
-write_csv(audit_log, "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/02_OUTCOME_AUDIT_LOG.csv")
+saveRDS(outcome_data, file.path(output_base, "02_OUTCOME_DATA.rds"))
+write_csv(audit_log, file.path(output_base, "02_OUTCOME_AUDIT_LOG.csv"))
 
 outcome_validation <- tibble(
   variable = c("donated_binary", "donation_amount_raw", "donation_amount_log"),
@@ -168,7 +168,7 @@ outcome_validation <- tibble(
   )
 )
 
-write_csv(outcome_validation, "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/02_OUTCOME_VALIDATION.csv")
+write_csv(outcome_validation, file.path(output_base, "02_OUTCOME_VALIDATION.csv"))
 
 cat("✓ Outcome data with evaluation_id saved\n")
 cat("✓ Outcome audit log saved\n")
@@ -179,7 +179,7 @@ saveRDS(list(
   outcome_data = outcome_data,
   audit_log = audit_log,
   outcome_validation = outcome_validation
-), "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/02_OUTCOME_PARSER_OUTPUT.rds")
+), file.path(output_base, "02_OUTCOME_PARSER_OUTPUT.rds"))
 
 cat("Output ready for Phase 0-3 (CFA with proper evaluation_id)\n\n")
 

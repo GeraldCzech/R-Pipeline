@@ -19,7 +19,7 @@ library(tidyverse)
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
 output_base <- args[1]
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+if (!nzchar(output_base)) stop("RUN_OUTPUT_DIR argument is empty")
 
 cat("\n")
 cat("╔════════════════════════════════════════════════════════════════════════════╗\n")
@@ -134,7 +134,7 @@ cat("\n\nSAVING RECONSTRUCTION:\n")
 cat("─────────────────────────────────────────────────────────────────────────────\n\n")
 
 # Save full reconstructed dataset
-saveRDS(fc_bo_with_ids, "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/01_FC_BO_WITH_EVALUATION_IDS.rds")
+saveRDS(fc_bo_with_ids, file.path(output_base, "01_FC_BO_WITH_EVALUATION_IDS.rds"))
 
 # Save person-org crosswalk
 person_org_crosswalk <- fc_bo_with_ids %>%
@@ -143,7 +143,7 @@ person_org_crosswalk <- fc_bo_with_ids %>%
   arrange(person_id, org_id)
 
 write_csv(person_org_crosswalk,
-          "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/01_PERSON_ORG_CROSSWALK.csv")
+          file.path(output_base, "01_PERSON_ORG_CROSSWALK.csv"))
 
 # Save reconstruction summary
 reconstruction_summary <- tibble(
@@ -157,7 +157,7 @@ reconstruction_summary <- tibble(
 )
 
 write_csv(reconstruction_summary,
-          "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/01_RECONSTRUCTION_SUMMARY.csv")
+          file.path(output_base, "01_RECONSTRUCTION_SUMMARY.csv"))
 
 cat("✓ Reconstructed dataset saved with evaluation_id\n")
 cat("✓ Person-org crosswalk saved\n")
@@ -168,7 +168,7 @@ saveRDS(list(
   fc_bo_with_ids = fc_bo_with_ids,
   person_org_crosswalk = person_org_crosswalk,
   reconstruction_summary = reconstruction_summary
-), "/home/gerald/R-pipeline/AUDIT_PIPELINE_OUTPUTS/01_RECONSTRUCTION_OUTPUT.rds")
+), file.path(output_base, "01_RECONSTRUCTION_OUTPUT.rds"))
 
 cat("Output ready for P0-04 (Outcome Parser)\n\n")
 
