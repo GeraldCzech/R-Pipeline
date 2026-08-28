@@ -54,7 +54,8 @@ run_phase "PHASE 4-7" "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_4_7_CFA_GLMM.R" "${LOG_D
 run_phase "PHASE 8-9" "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_8_9_BAYESIAN.R" "${LOG_DIR}/phase_8_9.log"
 run_phase "RUN GATES" "${BASE_DIR}/RUN_GATES.R" "${LOG_DIR}/run_gates.log"
 run_phase "PHASE 10" "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_10_FINAL_REPORT.R" "${LOG_DIR}/phase_10.log"
+run_phase "PHASE 11-14 (FULL SEM)" "${BASE_DIR}/AUDIT_RIGOROUS_PHASE_11_14_FULL_SEM.R" "${LOG_DIR}/phase_11_14.log"
 
 echo "" | tee -a "$RUN_LOG"
-echo "✓ ALL PHASES COMPLETE" | tee -a "$RUN_LOG"
+echo "✓ ALL PHASES COMPLETE (Including Full Bayesian SEM + Multigroup)" | tee -a "$RUN_LOG"
 echo "Output: $OUTPUT_DIR" | tee -a "$RUN_LOG"
