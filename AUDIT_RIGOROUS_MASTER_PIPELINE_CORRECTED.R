@@ -26,7 +26,7 @@ library(yaml)
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) stop("RUN_OUTPUT_DIR argument required")
 output_base <- args[1]
-stopifnot(nzchar(output_base), "RUN_OUTPUT_DIR argument not provided")
+if (!nzchar(output_base)) stop("RUN_OUTPUT_DIR argument is empty")
 
 # I-01 FIX: Load config for portable paths
 config <- yaml::read_yaml(here::here("config.yml"))
