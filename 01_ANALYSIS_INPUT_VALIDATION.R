@@ -59,26 +59,63 @@ if ("OF02_02_num" %in% names(fc_bo_with_ids)) {
     cat(sprintf("\n⚠️  WARNING: %d negative values detected (impossible for donation amount)\n", n_negative))
   }
 
-  # Create outcome definitions
+  # OUT-01 FIX: Use validated OF_Spender (based on role items) not amount observation
+  # OF_Spender is derived from OF01_01-OF01_04 and represents actual donor status
+  # Amount (OF02_02_num) is used only for Stage 2 (conditional on Stage 1)
   outcome_data <- fc_bo_with_ids %>%
     mutate(
-      # Binary outcome: donated anything?
-      donated_binary = as.numeric(OF02_02_num > 0),
-      # Amount outcome (conditional on donation)
-      donation_amount_raw = if_else(OF02_02_num > 0, OF02_02_num, NA_real_),
+      # Binary outcome: donor status (validated OF_Spender)
+      # TRUE = donor, FALSE = non-donor, NA = structural missing (not asked)
+      donated_binary = as.numeric(OF_Spender),
+      # Amount outcome (conditional on donation/donation status)
+      # Only define if: donor status is known AND amount is positive
+      donation_amount_raw = if_else(OF_Spender == TRUE & OF02_02_num > 0, OF02_02_num, NA_real_),
       # Log-scale (for amount model)
-      donation_amount_log = if_else(OF02_02_num > 0, log(OF02_02_num), NA_real_)
+      donation_amount_log = if_else(OF_Spender == TRUE & OF02_02_num > 0, log(OF02_02_num), NA_real_)
     )
 
-  cat("\n\nOUTCOME DEFINITIONS:\n")
+  # OUT-01 DOCUMENTATION: Outcome construction flow
+  outcome_flow <- tibble(
+    stage = c(
+      "Input",
+      "Outcome 1: Donor Status",
+      "Outcome 2: Amount (if donor)",
+      "Missing: Structural",
+      "Final: Stage 1",
+      "Final: Stage 2"
+    ),
+    n_cases = c(
+      nrow(outcome_data),
+      sum(!is.na(outcome_data$donated_binary)),
+      sum(!is.na(outcome_data$donation_amount_log)),
+      sum(is.na(outcome_data$donated_binary)),
+      sum(!is.na(outcome_data$donated_binary)),
+      sum(!is.na(outcome_data$donation_amount_log))
+    ),
+    description = c(
+      "Total evaluations (after ID reconstruction)",
+      "Donor status known (OF_Spender: TRUE=1, FALSE=0)",
+      "Donation amount observed AND donor=TRUE",
+      "Structural missing (OF_Spender = NA, not asked)",
+      "Binary model input (donor: yes/no)",
+      "Amount model input (log€ | donor=yes)"
+    )
+  )
+
+  cat("\n\nOUTCOME DEFINITIONS (OUT-01 CORRECTED):\n")
   cat("─────────────────────────────────────────────────────────────────────────────\n\n")
+  cat("Outcome Construction Flow:\n")
+  print(outcome_flow)
 
   # Binary outcome summary
-  cat("1. donated_binary (any donation in past year?):\n")
-  cat(sprintf("   n_obs: %d\n", nrow(outcome_data)))
-  cat(sprintf("   n_zero (no donation): %d\n", sum(outcome_data$donated_binary == 0, na.rm = TRUE)))
-  cat(sprintf("   n_positive (donated): %d\n", sum(outcome_data$donated_binary == 1, na.rm = TRUE)))
-  cat(sprintf("   missing: %d\n", sum(is.na(outcome_data$donated_binary))))
+  cat("\n1. Donor Status (OF_Spender, n=", sum(!is.na(outcome_data$donated_binary)), "):\n", sep="")
+  cat(sprintf("   TRUE (donor): %d (%.1f%%)\n",
+              sum(outcome_data$donated_binary == 1, na.rm = TRUE),
+              100 * sum(outcome_data$donated_binary == 1, na.rm = TRUE) / sum(!is.na(outcome_data$donated_binary))))
+  cat(sprintf("   FALSE (non-donor): %d (%.1f%%)\n",
+              sum(outcome_data$donated_binary == 0, na.rm = TRUE),
+              100 * sum(outcome_data$donated_binary == 0, na.rm = TRUE) / sum(!is.na(outcome_data$donated_binary))))
+  cat(sprintf("   Structural missing: %d\n", sum(is.na(outcome_data$donated_binary))))
 
   # Amount outcome summary
   cat("\n2. donation_amount_log (log € among donors):\n")
