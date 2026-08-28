@@ -172,6 +172,64 @@ bash RUN_COMPLETE_AUDIT_PIPELINE_CORRECTED.sh
 | `AUDIT_RIGOROUS_PHASE_10_FINAL_REPORT.R` | Report synthesis | ✅ Active |
 | `RUN_GATES.R` | Validation gates (G1-G5) | ✅ Active |
 
+## Important Limitation: Two-Stage vs Full SEM
+
+### Current Architecture (Two-Stage)
+
+```
+Data → CFA (latent factors) → Factor Scores (point estimates)
+                                     ↓
+                              GLMM (outcomes)
+```
+
+**Trade-offs:**
+- ✅ Simpler, more transparent
+- ✅ Separates measurement and structural models
+- ❌ Loses measurement uncertainty (scores are point estimates)
+- ❌ Cannot estimate direct paths between latents
+- ❌ No multigroup invariance testing
+
+### What's Missing (For 2026 Confirmatory Phase)
+
+**Full SEM (Joint Estimation)**
+```
+Data → CFA + Structural Paths + Outcome Paths (simultaneously)
+```
+- Preserves measurement uncertainty via posterior sampling
+- Tests theoretical model structure
+- Allows mediation/indirect effects
+- Enables multigroup invariance (configural → metric → scalar)
+
+**Multigroup SEM (Stratified Analysis)**
+- By donor status (OF_Spender)
+- By organization characteristics
+- By awareness level (TOM/SAW)
+- Tests whether relationships differ across groups
+
+### Why Two-Stage for 2025?
+
+1. **Audit requirement**: Audit accepted two-stage as exploratory
+2. **Data phase**: 2025 is discovery/hypothesis-generating
+3. **Complexity tradeoff**: Full SEM would require:
+   - Bayesian latent variable models (brms or Stan)
+   - Longer MCMC chains
+   - More complex diagnostics
+   - Full measurement uncertainty propagation
+
+### 2026 Roadmap
+
+Phase 1: Full Bayesian SEM
+- brms or `blavaan` (Bayesian lavaan)
+- Joint CFA + paths + outcomes
+- Latent outcome variables (no score collapse)
+
+Phase 2: Multigroup Comparison
+- Invariance testing across groups
+- Direct path comparisons (δ ≠ 0?)
+- Differential item functioning (DIF)
+
+---
+
 ## Audit Compliance
 
 ### P0 Blockers (CLOSED)
