@@ -1,0 +1,2 @@
+source,path,n_respondents,n_variables,variables,validation_date,status
+fragebogen.rds$FC_BO,/home/gerald/R-pipeline/pipeline_data_fc_bo.rds,2038,94,,2026-08-21,READY_FOR_SEM

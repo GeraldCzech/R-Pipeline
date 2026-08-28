@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>R-Pipeline Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      font-size: 28px;
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .header-subtitle {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+    }
+
+    .card h2 {
+      font-size: 16px;
+      color: #667eea;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .status-badge.running {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-badge.stopped {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #667eea;
+      margin: 15px 0;
+    }
+
+    .stat-label {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar {
+      background: #eee;
+      height: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      height: 100%;
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .targets-list {
+      list-style: none;
+      font-size: 13px;
+    }
+
+    .targets-list li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .targets-list li:last-child {
+      border-bottom: none;
+    }
+
+    .target-name {
+      flex: 1;
+    }
+
+    .target-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #e3f2fd;
+      color: #1976d2;
+      margin-left: 10px;
+    }
+
+    .resources {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .resource-item {
+      text-align: center;
+    }
+
+    .resource-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #667eea;
+      margin: 10px 0;
+    }
+
+    .resource-label {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .logs-section {
+      grid-column: 1 / -1;
+      margin-top: 20px;
+    }
+
+    .logs-container {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .log-line {
+      padding: 4px 0;
+      color: #666;
+      border-bottom: 1px solid #eee;
+    }
+
+    .log-line.error {
+      color: #d32f2f;
+      font-weight: bold;
+    }
+
+    .log-line.success {
+      color: #388e3c;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #eee;
+    }
+
+    .tab-btn {
+      padding: 10px 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #999;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .results-list {
+      list-style: none;
+      font-size: 13px;
+    }
+
+    .results-list li {
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border-left: 3px solid #667eea;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-info {
+      flex: 1;
+    }
+
+    .result-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .result-meta {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .result-size {
+      font-size: 12px;
+      color: #666;
+      margin-left: 20px;
+      white-space: nowrap;
+    }
+
+    .last-update {
+      text-align: center;
+      padding-top: 20px;
+      font-size: 12px;
+      color: #999;
+      border-top: 1px solid #eee;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #667eea;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 R-Pipeline Dashboard</h1>
+      <p class="header-subtitle">Echtzeit-Überwachung der Berechnungen</p>
+    </header>
+
+    <div class="grid">
+      <!-- Pipeline Status -->
+      <div class="card">
+        <h2>Status</h2>
+        <span id="status-badge" class="status-badge">...</span>
+        <div style="color: #666; font-size: 14px;">
+          <div id="service-status">Lädt...</div>
+          <div style="margin-top: 10px; font-size: 12px; color: #999;">
+            <span class="spinner"></span> Auto-Refresh alle 5s
+          </div>
+        </div>
+      </div>
+
+      <!-- Targets Progress -->
+      <div class="card">
+        <h2>Berechnete Targets</h2>
+        <div class="stat-label">Fortschritt</div>
+        <div class="stat-value" id="targets-count">0 / 0</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill" style="width: 0%">0%</div>
+        </div>
+        <div style="font-size: 12px; color: #666;" id="targets-info">
+          Lädt...
+        </div>
+      </div>
+
+      <!-- Resources -->
+      <div class="card">
+        <h2>Ressourcen</h2>
+        <div class="resources">
+          <div class="resource-item">
+            <div class="resource-label">CPU</div>
+            <div class="resource-value" id="cpu-usage">-</div>
+          </div>
+          <div class="resource-item">
+            <div class="resource-label">Memory</div>
+            <div class="resource-value" id="memory-usage">-</div>
+          </div>
+        </div>
+        <div style="text-align: center; font-size: 12px; color: #999; margin-top: 15px;">
+          <span id="resource-status">Inaktiv</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Targets und Logs -->
+    <div class="card">
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab('targets')">Targets</button>
+        <button class="tab-btn" onclick="switchTab('results')">Ergebnisse</button>
+        <button class="tab-btn" onclick="switchTab('logs')">Logs</button>
+      </div>
+
+      <!-- Targets Tab -->
+      <div id="targets" class="tab-content active">
+        <ul class="targets-list" id="targets-list">
+          <li style="padding: 20px; text-align: center; color: #999;">Lädt...</li>
+        </ul>
+      </div>
+
+      <!-- Results Tab -->
+      <div id="results" class="tab-content">
+        <ul class="results-list" id="results-list">
+          <li style="padding: 20px; text-align: center; color: #999;">Lädt...</li>
+        </ul>
+      </div>
+
+      <!-- Logs Tab -->
+      <div id="logs" class="tab-content">
+        <div class="logs-section">
+          <h3 style="margin-bottom: 10px; font-size: 14px;">Pipeline Logs</h3>
+          <div class="logs-container" id="logs-container">
+            <div style="color: #999;">Lädt...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="last-update">
+        <span id="last-update">Wird aktualisiert...</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api/status';
+    const REFRESH_INTERVAL = 5000; // 5 seconds
+
+    async function updateDashboard() {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+
+        // Service Status
+        const isRunning = data.pipeline.running;
+        document.getElementById('status-badge').className = `status-badge ${isRunning ? 'running' : 'stopped'}`;
+        document.getElementById('status-badge').textContent = data.pipeline.status;
+        document.getElementById('service-status').textContent = `Service: ${data.pipeline.status}`;
+
+        // Targets
+        const completed = data.targets.completed;
+        const total = data.targets.total;
+        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        document.getElementById('targets-count').textContent = `${completed} / ${total}`;
+        document.getElementById('progress-fill').style.width = `${percent}%`;
+        document.getElementById('progress-fill').textContent = `${percent}%`;
+        document.getElementById('targets-info').textContent = `${percent}% abgeschlossen`;
+
+        // Targets List
+        const targetsList = document.getElementById('targets-list');
+        targetsList.innerHTML = '';
+        data.targets.targets.forEach(target => {
+          const li = document.createElement('li');
+          const badge = document.createElement('span');
+          badge.className = 'target-badge';
+          badge.textContent = target.type;
+          li.innerHTML = `<span class="target-name">${target.name}</span>`;
+          li.appendChild(badge);
+          targetsList.appendChild(li);
+        });
+
+        // Resources
+        const resources = data.resources;
+        document.getElementById('cpu-usage').textContent = resources.cpu.toFixed(1) + '%';
+        document.getElementById('memory-usage').textContent = resources.memory.toFixed(1) + '%';
+        document.getElementById('resource-status').textContent = resources.active ? '🟢 Aktiv' : '⚫ Inaktiv';
+
+        // Logs
+        const logsContainer = document.getElementById('logs-container');
+        logsContainer.innerHTML = '';
+        if (data.logs.pipeline.length > 0) {
+          data.logs.pipeline.forEach(line => {
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            if (line.includes('ERROR') || line.includes('error')) {
+              logLine.classList.add('error');
+            } else if (line.includes('completed successfully')) {
+              logLine.classList.add('success');
+            }
+            logLine.textContent = line.trim();
+            logsContainer.appendChild(logLine);
+          });
+        } else {
+          logsContainer.innerHTML = '<div style="color: #999;">Keine Logs verfügbar</div>';
+        }
+
+        // Results
+        const resultsList = document.getElementById('results-list');
+        resultsList.innerHTML = '';
+        if (data.results.length > 0) {
+          data.results.forEach(result => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <div class="result-info">
+                <div class="result-name">${result.name}</div>
+                <div class="result-meta">${result.path} • ${result.modified}</div>
+              </div>
+              <div class="result-size">${result.size}</div>
+            `;
+            resultsList.appendChild(li);
+          });
+        } else {
+          resultsList.innerHTML = '<li style="padding: 20px; text-align: center; color: #999;">Keine Ergebnisse verfügbar</li>';
+        }
+
+        // Last update
+        const now = new Date();
+        document.getElementById('last-update').textContent = `Zuletzt aktualisiert: ${now.toLocaleTimeString('de-DE')}`;
+
+      } catch (error) {
+        console.error('Error fetching status:', error);
+        document.getElementById('service-status').textContent = 'Fehler beim Abrufen des Status';
+      }
+    }
+
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Initial update and set interval
+    updateDashboard();
+    setInterval(updateDashboard, REFRESH_INTERVAL);
+  </script>
+</body>
+</html>

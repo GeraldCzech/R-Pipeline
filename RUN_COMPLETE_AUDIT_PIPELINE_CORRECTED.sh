@@ -10,6 +10,18 @@ RUN_LOG="${LOG_DIR}/RUN_${RUN_ID}.log"
 
 mkdir -p "$LOG_DIR" "$OUTPUT_DIR"
 
+# G-03 FIX: Create run manifest with start time
+MANIFEST_FILE="$OUTPUT_DIR/RUN_MANIFEST.yaml"
+cat > "$MANIFEST_FILE" << MANIFEST_EOF
+run_id: "RUN_${RUN_ID}"
+started_at_utc: "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+commit: "$COMMIT_HASH"
+output_dir: "$OUTPUT_DIR"
+pipeline_version: "3.0"
+MANIFEST_EOF
+
+echo "✓ Run manifest created: $MANIFEST_FILE" | tee -a "$RUN_LOG"
+
 run_phase() {
   local phase="$1"
   local script="$2"

@@ -47,9 +47,19 @@ required_files <- c(
   "bayes_amount_POSTERIOR_DRAWS.csv"
 )
 
-# P0-02 FIX: Check files are in CURRENT RUN output directory with recent timestamps
+# G-03 FIX: Read manifest for actual run start time instead of fixed window
 all_files_exist <- TRUE
-run_start_time <- Sys.time() - 1800  # Allow 30 minute window for full pipeline run (Bayesian phase takes time)
+manifest_file <- file.path(output_base, "RUN_MANIFEST.yaml")
+
+run_start_time <- if (file.exists(manifest_file)) {
+  manifest <- yaml::read_yaml(manifest_file)
+  started_at <- manifest$started_at_utc
+  cat(sprintf("Using run start time from manifest: %s\n", started_at))
+  as.POSIXct(started_at, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+} else {
+  cat("⚠ Warning: No run manifest found, using 120-minute window\n")
+  Sys.time() - 7200  # 2-hour fallback window for long runs
+}
 
 for (file in required_files) {
   fpath <- file.path(output_base, file)

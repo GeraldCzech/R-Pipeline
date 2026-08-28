@@ -1,0 +1,289 @@
+# =============================================================================
+# _targets.R -- BEBA Background Compute Pipeline
+# =============================================================================
+#
+# PURPOSE: Fill idle server time with long-running Block 1 (2025 data) and
+# supplementary analyses that do not feed back into the Block 2 (2026)
+# confirmatory analysis (see the OSF preregistration's Foreknowledge
+# disclosure -- anything run here is explicitly Block 1 / supplementary and
+# must NOT be used to inform Block 2 parameter estimation).
+#
+# WHY `targets`: it builds a dependency graph (a DAG) of your analysis steps
+# and only (re-)runs a step if its code or its inputs have changed since the
+# last run. That means:
+#   - You can leave this running unattended for days or weeks.
+#   - You can add NEW targets at any time (just add a tar_target() block
+#     below) and re-run -- only the new/changed targets execute; everything
+#     already computed is loaded from cache instantly.
+#   - If the machine reboots or a job crashes halfway, tar_make() picks up
+#     where it left off rather than redoing finished work.
+#
+# HOW TO ADD MORE WORK LATER (this is the main thing you'll do over the
+# coming weeks): scroll to the bottom "ADD NEW TARGETS BELOW THIS LINE"
+# comment and add a tar_target(...) block. Save the file. Next time
+# run_queue.R (or a scheduled task) calls tar_make(), the new target runs.
+#
+# SETUP (one-time):
+#   install.packages(c("targets", "tarchetypes", "blavaan", "rstan",
+#                       "RoBMA", "brms", "domir", "relaimpo", "rwa",
+#                       "NCA", "glmnet", "ordinalNet", "lme4", "glmmTMB",
+#                       "tidyverse", "future", "future.callr"))
+#   (blavaan/rstan/brms require a working C++ toolchain -- on Windows,
+#   install Rtools matching your R 4.6.0 version first.)
+#
+# =============================================================================
+
+library(targets)
+library(tarchetypes)
+
+# Parallelism: safe default is sequential (avoids BLAS/OpenMP oversubscription
+# issues you hit before with the bootstrap engine). Bump workers only for
+# targets you know are single-threaded-safe (e.g. independent NCA/dominance
+# analyses across outcomes), never for Stan/blavaan chains -- let Stan use
+# its own multi-core chains instead (set in R/blavaan_models.R).
+options(clustermq.scheduler = "multicore")
+tar_option_set(
+  packages = c("tidyverse"),
+  format   = "rds",
+  error    = "continue"   # one failed target does not halt the whole queue
+)
+
+source("R/blavaan_models.R")
+source("R/robma_pipeline.R")
+source("R/bayes_admin_mlm.R")
+source("R/dominance_nca_elasticnet.R")
+
+list(
+
+  # ---------------------------------------------------------------------
+  # 0. DATA (using cached data from _targets/workspaces or source files)
+  # The pipeline will load cached versions if they exist
+  # Delete cache to reload: tar_delete(c("block1_data", "admin_data", "evid_corpus"))
+  # Then add correct file paths and re-run
+  # ---------------------------------------------------------------------
+  tar_target(block1_data_file, "/home/gerald/10787172/fragebogen_cache_v5.rds", format = "file"),
+  tar_target(block1_data, readRDS(block1_data_file)),
+
+  tar_target(admin_data_file, "/home/gerald/10787172/output/NGO_BMF_ID_Referenzliste_Flach.csv", format = "file"),
+  tar_target(admin_data, readr::read_csv(admin_data_file, show_col_types = FALSE)),
+
+  tar_target(evid_corpus_file, "/home/gerald/dissertation/output/fragebogen.rds", format = "file"),
+  tar_target(evid_corpus, readRDS(evid_corpus_file)),
+
+  # =====================================================================
+  # 1. BAYESIAN SEM (blavaan) -- intensive with diagnostics & validation
+  # =====================================================================
+  # Model 1: Faircloth Core B
+  tar_target(
+    bsem_faircloth_coreb,
+    fit_blavaan_model(block1_data, syntax = fc_smaller_syntax(),
+                       label = "faircloth_core_b", n.chains = 8,
+                       burnin = 3000, sample = 6000)
+  ),
+  tar_target(
+    bsem_faircloth_diagnostics,
+    diagnose_blavaan(bsem_faircloth_coreb, label = "faircloth_core_b")
+  ),
+  tar_target(
+    bsem_faircloth_sensitivity,
+    sensitivity_blavaan(block1_data, syntax = fc_smaller_syntax(),
+                        label = "faircloth_sensitivity")
+  ),
+
+  # Model 2: Boenigk
+  tar_target(
+    bsem_boenigk,
+    fit_blavaan_model(block1_data, syntax = bo_orig_syntax(),
+                       label = "boenigk_becker", n.chains = 8,
+                       burnin = 3000, sample = 6000)
+  ),
+  tar_target(
+    bsem_boenigk_diagnostics,
+    diagnose_blavaan(bsem_boenigk, label = "boenigk_becker")
+  ),
+  tar_target(
+    bsem_boenigk_sensitivity,
+    sensitivity_blavaan(block1_data, syntax = bo_orig_syntax(),
+                        label = "boenigk_sensitivity")
+  ),
+
+  # Model 3: Romero
+  tar_target(
+    bsem_romero,
+    fit_blavaan_model(block1_data, syntax = ro_smaller_syntax(),
+                       label = "rios_romero", n.chains = 8,
+                       burnin = 3000, sample = 6000)
+  ),
+  tar_target(
+    bsem_romero_diagnostics,
+    diagnose_blavaan(bsem_romero, label = "rios_romero")
+  ),
+  tar_target(
+    bsem_romero_sensitivity,
+    sensitivity_blavaan(block1_data, syntax = ro_smaller_syntax(),
+                        label = "romero_sensitivity")
+  ),
+
+  # Comprehensive comparison
+  tar_target(
+    bsem_comparison_report,
+    summarise_blavaan_comparison(bsem_faircloth_coreb, bsem_boenigk, bsem_romero)
+  ),
+  tar_target(
+    bsem_cross_validation,
+    crossval_blavaan(block1_data, models = list(
+      fc = fc_smaller_syntax(),
+      bo = bo_orig_syntax(),
+      ro = ro_smaller_syntax()
+    ))
+  ),
+
+  # =====================================================================
+  # 2. RoBMA -- Intensive robust meta-analysis with multiple approaches
+  # =====================================================================
+  # Main ROBMA with more iterations
+  tar_target(
+    robma_fit,
+    run_robma(evid_corpus, seed = 20260815, iter = 5000)
+  ),
+  tar_target(
+    robma_diagnostics,
+    diagnose_robma(robma_fit)
+  ),
+  tar_target(
+    robma_report,
+    summarise_robma(robma_fit)
+  ),
+
+  # Publication bias sensitivity
+  tar_target(
+    robma_pub_bias,
+    analyze_publication_bias(evid_corpus)
+  ),
+
+  # Effect size heterogeneity
+  tar_target(
+    robma_heterogeneity,
+    analyze_heterogeneity(robma_fit)
+  ),
+
+  # Subgroup analyses (if applicable)
+  tar_target(
+    robma_subgroups,
+    robma_subgroup_analysis(evid_corpus)
+  ),
+
+  # =====================================================================
+  # 3. Bayesian MLM -- Admin data with multiple model specifications
+  # =====================================================================
+  # Main model (organisation-level MEV)
+  tar_target(
+    bayes_mev_fit,
+    fit_bayes_admin_mlm(admin_data, chains = 8, iter = 8000, warmup = 2000)
+  ),
+  tar_target(
+    bayes_mev_diagnostics,
+    diagnose_brms_model(bayes_mev_fit, label = "MEV_main")
+  ),
+  tar_target(
+    bayes_mev_report,
+    summarise_bayes_mev(bayes_mev_fit)
+  ),
+
+  # Model comparison: simpler vs complex
+  tar_target(
+    bayes_mev_simple,
+    fit_bayes_admin_mlm_simple(admin_data, chains = 8, iter = 8000)
+  ),
+  tar_target(
+    bayes_mev_loo,
+    loo_compare_models(bayes_mev_fit, bayes_mev_simple)
+  ),
+
+  # Posterior predictions and validation
+  tar_target(
+    bayes_mev_predictions,
+    predict_bayes_admin(bayes_mev_fit, admin_data)
+  ),
+
+  # Sensitivity to priors
+  tar_target(
+    bayes_mev_prior_sensitivity,
+    prior_sensitivity_brms(admin_data, label = "MEV_priors")
+  ),
+
+  # =====================================================================
+  # 4. DOMINANCE ANALYSIS -- outcome: OF_Spender_bin (multiple validations)
+  # =====================================================================
+  tar_target(
+    dominance_results,
+    run_dominance_analysis(block1_data, outcome = "OF_Spender_bin")
+  ),
+  tar_target(
+    dominance_bootstrap,
+    bootstrap_dominance(block1_data, outcome = "OF_Spender_bin", n_boot = 1000)
+  ),
+  tar_target(
+    dominance_secondary_outcome,
+    run_dominance_analysis(block1_data, outcome = "engagement_ladder")
+  ),
+
+  # =====================================================================
+  # 5. NCA ANALYSIS -- Necessary Condition Analysis (multiple specifications)
+  # =====================================================================
+  tar_target(
+    nca_results,
+    run_nca_analysis(block1_data, outcome = "OF_Spender_bin")
+  ),
+  tar_target(
+    nca_plots,
+    nca_visualization(block1_data, outcome = "OF_Spender_bin")
+  ),
+  tar_target(
+    nca_secondary,
+    run_nca_analysis(block1_data, outcome = "engagement_ladder")
+  ),
+  tar_target(
+    nca_robustness,
+    nca_robustness_check(block1_data)
+  ),
+
+  # =====================================================================
+  # 6. ELASTIC NET REGRESSION -- (with cross-validation & multiple outcomes)
+  # =====================================================================
+  tar_target(
+    elasticnet_results,
+    run_elastic_net(block1_data, outcome_ordinal = "engagement_ladder")
+  ),
+  tar_target(
+    elasticnet_cv,
+    elasticnet_cross_validation(block1_data, outcome = "engagement_ladder", n_folds = 10)
+  ),
+  tar_target(
+    elasticnet_binary,
+    run_elastic_net_binary(block1_data, outcome = "OF_Spender_bin")
+  ),
+  tar_target(
+    elasticnet_variable_importance,
+    elasticnet_feature_importance(block1_data)
+  ),
+
+  # =====================================================================
+  # 7. INTEGRATED ANALYSIS & SYNTHESIS
+  # =====================================================================
+  tar_target(
+    integrated_report,
+    synthesize_all_analyses(
+      bsem_faircloth_coreb, bsem_boenigk, bsem_romero,
+      robma_fit, bayes_mev_fit,
+      dominance_results, nca_results, elasticnet_results
+    )
+  ),
+
+  # =========================================================================
+  # ADD NEW TARGETS BELOW THIS LINE
+  # Copy a tar_target(name, expression) block, give it a unique name, save,
+  # and next run_queue.R pass will pick it up automatically.
+  # =========================================================================
+
+)

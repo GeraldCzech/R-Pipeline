@@ -1,0 +1,298 @@
+Du arbeitest als Senior R Engineer mit Spezialisierung auf Strukturgleichungsmodelle,
+lavaan, blavaan, reproduzierbare Analysepipelines und statistische Qualitätskontrolle.
+
+AUFGABE
+Refaktoriere die bestehende SEM-Pipeline in diesem Repository. Untersuche zuerst
+vollständig die vorhandene Ordnerstruktur, R-Skripte, Modellsyntax, Konfigurationen,
+CSV-Exporte und RDS-Dateien. Nimm keine Annahmen allein aus Dateinamen vor. Ermittle
+die tatsächliche Bedeutung und Skalierung der Variablen aus Codebook, README,
+Syntax und bestehenden Skripten.
+
+WICHTIGE AUSGANGSBEFUNDE
+- Es gibt 25 eindeutige lavaan-MLR-Fits: 5 Brandmodelle × 5 Outcomes.
+- Es gibt 5 eindeutige blavaan-All4-Fits.
+- Eine zusätzliche Higher-Order-RDS-Datei ist ein byte-identisches Duplikat.
+- In keinem vorhandenen Fit existiert ein Regressionspfad mit op = "~".
+- Alle 20 Einzel-Outcome-Modelle schätzen nur Outcome-Mittelwert und -Varianz.
+  Es gibt keine Brand–Outcome-Regression oder -Kovarianz.
+- Nur All4 enthält Brand–Outcome-Kovarianzen. Diese sind keine gerichteten Effekte.
+- Boenigk Network ist das bevorzugte Primärmodell.
+- Boenigk Original ist eine parsimonische Sensitivität.
+- Faircloth First Order ist eine Sensitivität, aber Reverse-Coding und
+  diskriminante Validität müssen geprüft werden.
+- Faircloth Core-B ist eine eingeschränkte Sensitivität.
+- Faircloth Higher Order ist in der aktuellen Form technisch nicht interpretierbar:
+  fehlende Standardfehler in zwei MLR-Fits, extrem schlecht konditionierte VCOV,
+  75 Bayes-Divergenzen, R-hat bis 1.089 und ESS bis etwa 63.
+
+GRUNDSÄTZE
+1. Trenne Daten-QC, Messmodelle, Strukturmodelle, Robustheitsmodelle und Reporting.
+2. Verwende keine Dateinamen als primäre Modelllogik. Erstelle eine explizite
+   Modell-Registry in YAML oder einer klaren R-Datenstruktur.
+3. Verändere niemals Rohdaten oder bestehende RDS-Dateien.
+4. Bewahre bestehende Outputs; schreibe neue Ergebnisse in einen versionierten
+   v2-Outputordner.
+5. Setze deterministische Seeds und speichere packageVersion(), sessionInfo(),
+   Git-Commit und Daten-Checksummen.
+6. Ein formales converged=TRUE darf keine fehlenden SE, singuläre VCOV oder schlechte
+   MCMC-Diagnostik überschreiben.
+7. Führe keine vollständigen mehrstündigen Bayes-Läufe während des Refactorings aus.
+   Implementiere zuerst Smoke-Tests und liefere anschließend den expliziten Befehl
+   für die Produktionsläufe.
+
+ZIELARCHITEKTUR
+
+A. DATA QC
+Implementiere Prüfungen für:
+- Variablentyp und Wertebereich;
+- Missingness und Coverage;
+- Verteilung, Nullanteil und Ausreißer jedes Outcomes;
+- tatsächliche Codierung von FC02_10_rev und FC02_12_rev;
+- Korrelationen der reverse formulierten mit den übrigen FC_BS-Items;
+- Fallzahlen nach Organisation und relevanten Gruppen;
+- Duplikate anhand von SHA-256 statt Dateinamen.
+
+Die Pipeline muss abbrechen oder einen klaren FAIL erzeugen, wenn Reverse-Coding,
+Variablentyp oder Outcome-Mapping unklar ist. Nicht stillschweigend umcodieren.
+
+B. MODELL-REGISTRY
+Erstelle mindestens folgende Felder:
+
+model_id
+family
+role
+enabled
+experimental
+measurement_syntax_file
+structural_syntax_file
+outcome
+outcome_type
+ordered_variables
+estimator
+missing_strategy
+comparison_set
+primary_or_sensitivity
+seed
+output_path
+
+Initiale Rollen:
+- bo_network: primary
+- bo_original: sensitivity_parsimonious
+- fc_first_order: sensitivity_full
+- fc_core_B: sensitivity_reduced
+- fc_higher_order: disabled_experimental
+
+All4 muss als sensitivity_outcome markiert werden, nicht als primäres Outcome.
+
+C. MESSMODELLE
+Schätze Brand-Messmodelle zunächst ohne Outcome.
+
+Exportiere:
+- parameterEstimates();
+- standardizedSolution() mit est.std/std.all;
+- konventionelle, scaled und robust Fitindizes;
+- χ², df, CFI, TLI, RMSEA mit CI, SRMR;
+- standardisierte Residuen;
+- Faktorvarianzen und Faktorkorrelationen;
+- Omega und AVE;
+- HTMT, soweit methodisch und technisch verfügbar;
+- größte lokale Fehlanpassungen;
+- Iterationen, Laufzeit, Gradienten, VCOV-Rang, Eigenwerte und Konditionszahl;
+- Warnungen und vollständige Modellsyntax.
+
+Berechne für korrelierte latente Prädiktoren einen latenten VIF aus der
+Faktorkorrelationsmatrix. Markiere Korrelationen >= .80 als WARN.
+
+D. STRUKTURMODELLE
+Jedes Strukturmodell muss mindestens einen gerichteten Outcome-Pfad enthalten.
+
+Boenigk Network:
+Outcome ~ BO_TR + BO_CO + BO_BF + BO_RC
+
+Boenigk Original:
+Outcome ~ BO_BE
+
+Faircloth First Order:
+Outcome ~ FC_BR + FC_BD + FC_BC + FC_BS + FC_BF + FC_RC
+
+Faircloth Core-B:
+Outcome ~ FC_BE
+
+Ersetze Outcome jeweils durch die korrekte Variable oder den korrekt definierten
+latenten Outcome-Faktor.
+
+Implementiere einen Unit-Test:
+- sum(parameterTable(fit)$op == "~") > 0
+- das jeweilige Outcome muss lhs eines "~"-Pfades sein
+- ein als structural klassifiziertes Modell ohne diese Bedingungen erhält FAIL
+  und darf nicht in inhaltliche Ergebnistabellen gelangen.
+
+Exportiere:
+- unstandardisierte und vollständig standardisierte Regressionspfade;
+- robuste SE bzw. Posteriorintervalle;
+- R² oder geeignete Pseudo-R²-Werte;
+- Zero-Order-Brand–Outcome-Korrelationen;
+- partielle Strukturpfade;
+- Veränderung gegenüber einem Controls-only-Modell;
+- relevante Vorhersagemaße.
+
+E. OUTCOME-DISPATCHER
+Ermittle die tatsächliche Semantik aus dem Codebook, nicht nur aus Namen.
+
+Voraussichtliche Regeln:
+- annähernd kontinuierliche Skalen: MLR plus FIML;
+- binäre/ordinale Outcomes: lavaan mit ordered= und WLSMV;
+- dokumentiere, dass kategoriales lavaan kein FIML verwendet;
+- log-transformierte kontinuierliche Größen: MLR nur nach Verteilungsprüfung;
+- Status plus positive Intensität: eigener Hurdle-/Two-Part-Zweig.
+
+OF_Spender_bin darf nicht mehr als normalverteiltes kontinuierliches Outcome
+geschätzt werden.
+
+Falls ein echtes Hurdle-, Count- oder Zero-inflated-Modell mit dem vorhandenen
+SEM-Stack nicht valide möglich ist:
+- implementiere eine klar getrennte Engine-Schnittstelle;
+- dokumentiere die geeignete Alternative;
+- erzeuge einen expliziten TODO/NOT_IMPLEMENTED-Status;
+- verwende keine stillschweigende Normalapproximation;
+- erfinde keine gemeinsame Likelihood.
+
+F. MEDIATION UND PROZESSMODELLE
+Wenn Intention und Verhalten im Datensatz vorhanden und theoretisch entsprechend
+definiert sind, implementiere konkurrierende Modelle:
+
+M0: Outcome ~ controls
+M1: Outcome ~ brand factors + controls
+M2: Intention ~ brand factors + controls
+M3: Behavior ~ Intention + brand factors + controls
+M4: Behavior ~ Intention + controls, direkte Brandpfade auf null
+
+Definiere für M3/M4 benannte:
+- indirekte Effekte;
+- direkte Effekte;
+- totale Effekte;
+- Mediationsanteile, sofern numerisch sinnvoll.
+
+Führe diese Modelle nur aus, wenn Variablenbedeutung und zeitliche/theoretische
+Reihenfolge aus Codebook oder Preregistration eindeutig hervorgehen.
+
+G. MODELLVERGLEICHE
+Vergleiche Modelle nur, wenn sie:
+- dieselbe beobachtete Variablenmenge;
+- dasselbe Outcome;
+- kompatible Missingness-Behandlung;
+- und einen kompatiblen Schätzer besitzen.
+
+Frequentistisch:
+- robuste/scaled Differenztests für verschachtelte MLR-Modelle;
+- geeignete verschachtelte Tests für WLSMV;
+- AIC/BIC nur bei vergleichbarer Likelihood und identischer Variablenmenge.
+
+Bayesianisch:
+- PSIS-LOO mit elpd-Differenz und SE;
+- Pareto-k-Verteilung;
+- MCSE von LOO;
+- bei problematischen k-Werten eine dokumentierte Eskalation zu
+  Moment-Matching, Refit oder K-fold-CV;
+- WAIC nur ergänzend.
+
+Keine globale Rangliste über Modelle mit unterschiedlichen manifesten Variablen.
+
+H. QUALITY GATES
+Implementiere PASS, WARN und FAIL.
+
+FAIL:
+- keine Optimizer-Konvergenz;
+- nicht-finite Schätzungen;
+- fehlende Standardfehler oder fehlende VCOV;
+- rangdefiziente VCOV;
+- negative Residual-/Faktorvarianz;
+- Strukturmodell ohne Outcome-Regression;
+- Bayes-Divergenzen > 0;
+- R-hat > 1.01;
+- gravierend unzureichende Bulk- oder Tail-ESS.
+
+WARN:
+- sehr hohe VCOV-Konditionszahl;
+- auffälliger maximaler Gradient;
+- |standardisierte Ladung| > 1;
+- Ladung < .40;
+- latente Korrelation >= .80;
+- problematische Pareto-k-Werte;
+- schlechter Globalfit bei ansonsten admissibler Schätzung.
+
+Globalfit allein darf keinen technischen FAIL erzeugen. Ein FAIL-Fit darf aber
+nicht in Koeffizienteninterpretationen, Modellrankings oder Executive Summaries
+erscheinen.
+
+I. BAYES
+Für Produktionsmodelle vorbereiten:
+- 4 Ketten;
+- mindestens 1000 Warmup-Iterationen pro Kette;
+- mindestens 2000 Post-Warmup-Ziehungen pro Kette;
+- skalenspezifische, begründete Priors;
+- Prior-Predictive Checks;
+- Posterior-Predictive Checks;
+- R-hat, Bulk-ESS, Tail-ESS, MCSE;
+- Divergenzen, Treedepth und E-BFMI;
+- PSIS-LOO und Pareto-k.
+
+Faircloth Higher Order bleibt deaktiviert, bis eine neu spezifizierte Version
+alle frequentistischen und bayesianischen Quality Gates besteht.
+
+J. OUTPUTS
+Erzeuge mindestens:
+
+model_inventory.csv
+data_quality.csv
+measurement_fit.csv
+measurement_loadings.csv
+reliability_ave_htmt.csv
+latent_correlations_vif.csv
+structural_paths.csv
+direct_indirect_total_effects.csv
+outcome_r2_prediction.csv
+model_comparisons.csv
+mlr_diagnostics.csv
+bayes_diagnostics.csv
+loo_pareto_diagnostics.csv
+interpretability_status.csv
+analysis_manifest.json
+
+Jede Zeile benötigt:
+model_id, family, role, outcome, outcome_type, estimator, comparison_set,
+status, warning_codes, seed, software_versions und fit_file.
+
+K. TESTS
+Erstelle testthat-Tests für:
+- eindeutige Modell-IDs;
+- gültiges Outcome-Mapping;
+- estimator/outcome_type-Kompatibilität;
+- mindestens einen "~"-Pfad in Strukturmodellen;
+- keine Vergleiche über unterschiedliche comparison_sets;
+- Ausschluss von FAIL-Fits aus Interpretationsoutputs;
+- Duplikaterkennung;
+- Reverse-Coding-QC;
+- deterministische Seeds;
+- vollständige Pflichtspalten aller Exporte.
+
+VORGEHEN
+1. Analysiere zuerst den Ist-Zustand und fasse die Ursachen der bisherigen
+   Fehlsteuerung zusammen.
+2. Zeige den geplanten Dateibaum und die Modell-Registry.
+3. Implementiere die Refaktorierung schrittweise.
+4. Bewahre funktionierende bestehende Komponenten, wenn sie den Anforderungen
+   entsprechen.
+5. Führe kleine synthetische Unit-Tests und einen Frequentist-Smoke-Test aus.
+6. Starte keine langen Bayes-Produktionsläufe.
+7. Prüfe alle erzeugten CSV/JSON-Dateien auf Schema- und Formelfehler.
+8. Dokumentiere abschließend:
+   - geänderte und neu angelegte Dateien;
+   - ausgeführte Tests;
+   - Smoke-Test-Ergebnis;
+   - verbleibende fachliche Entscheidungen;
+   - exakten Befehl für den vollständigen Produktionslauf.
+
+Arbeite nicht nur kosmetisch am Reporting. Die zentrale Aufgabe ist, aus der
+bisherigen Sammlung unverbundener CFA-/Kovarianzmodelle eine theoriegeleitete,
+outcome-spezifische und technisch abgesicherte SEM-Pipeline zu machen.

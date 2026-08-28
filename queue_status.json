@@ -1,0 +1,9 @@
+{
+  "pending": 0,
+  "running": 0,
+  "done": 0,
+  "failed": 9,
+  "total": 9,
+  "current_job": null,
+  "timestamp": "2026-08-28T14:33:12.283252"
+}

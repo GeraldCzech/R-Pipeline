@@ -1,0 +1,32 @@
+[Unit]
+Description=R Pipeline Background Compute
+Documentation=file:///home/gerald/R-pipeline/README.md
+After=network.target
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+[Service]
+Type=simple
+User=gerald
+WorkingDirectory=/home/gerald/R-pipeline
+ExecStart=/usr/bin/python3 /home/gerald/R-pipeline/pipeline_daemon.py
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Resource limits (adjust as needed)
+CPUQuota=80%
+MemoryLimit=4G
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=r-pipeline
+
+# Security
+PrivateTmp=yes
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

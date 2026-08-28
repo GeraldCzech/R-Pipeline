@@ -52,7 +52,6 @@ diagnostics <- read_csv(file.path(output_base, "07_DIAGNOSTICS_SUMMARY.csv"))
 # Bayesian
 bayes_binary_fe <- read_csv(file.path(output_base, "08_BAYES_BINARY_FIXED_EFFECTS.csv"))
 bayes_amount_fe <- read_csv(file.path(output_base, "09_BAYES_AMOUNT_FIXED_EFFECTS.csv"))
-loo_comparison <- read_csv(file.path(output_base, "09_LOO_MODEL_COMPARISON.csv"))
 bayes_diag <- read_csv(file.path(output_base, "09_COMPREHENSIVE_BAYESIAN_DIAGNOSTICS.csv"))
 
 # Outcome validation
@@ -222,7 +221,8 @@ report <- paste0(report, "  - bayes_binary_POSTERIOR_DRAWS.csv (4000 samples)\n"
 report <- paste0(report, "  - 09_PPC_AMOUNT.png\n")
 report <- paste0(report, "  - 09_BAYES_AMOUNT_FIXED_EFFECTS.csv\n")
 report <- paste0(report, "  - bayes_amount_POSTERIOR_DRAWS.csv (4000 samples)\n")
-report <- paste0(report, "  - 09_LOO_MODEL_COMPARISON.csv\n")
+report <- paste0(report, "  - 09_LOO_BINARY_ONLY.csv\n")
+report <- paste0(report, "  - 09_LOO_AMOUNT_ONLY.csv\n")
 report <- paste0(report, "  - 09_COMPREHENSIVE_BAYESIAN_DIAGNOSTICS.csv\n")
 report <- paste0(report, "  - bayes_*_FIT.rds (full Stan model objects)\n\n")
 

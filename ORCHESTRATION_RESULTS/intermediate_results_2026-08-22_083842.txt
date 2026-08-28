@@ -1,0 +1,19 @@
+INTERMEDIATE RESULTS - 2026-08-22_083842
+
+Phase C (Structural SEM Models):
+  RDS files generated: 18/20
+  CSV summaries: No
+  Status: IN PROGRESS
+
+Phase E (Model Comparisons):
+  Comparison sets completed: 0/8
+  CSV exports: No
+  Status: PENDING
+
+Phase F (Bayesian MCMC):
+  Blavaan fits generated: 0/20
+  Summary files: No
+  Status: PENDING
+
+Generated: 2026-08-22 08:38:42
+

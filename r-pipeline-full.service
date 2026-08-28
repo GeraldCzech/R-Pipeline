@@ -1,0 +1,25 @@
+[Unit]
+Description=Comprehensive R Analysis Pipeline (Full CFA→SEM→GLM)
+After=network.target
+Wants=r-pipeline-cfa.service
+
+[Service]
+Type=simple
+User=gerald
+WorkingDirectory=/home/gerald/R-pipeline
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+StandardOutput=append:/home/gerald/R-pipeline/logs/pipeline-full.log
+StandardError=append:/home/gerald/R-pipeline/logs/pipeline-full.log
+
+# Wait for initial CFA pipeline to complete
+ExecStartPre=/bin/sleep 30
+
+# Run full comprehensive pipeline with SEM & GLM
+ExecStart=/usr/bin/Rscript /home/gerald/R-pipeline/01_COMPREHENSIVE_ANALYSIS_FULL.R
+
+Restart=no
+SyslogIdentifier=r-pipeline-full
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

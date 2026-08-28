@@ -1,0 +1,17 @@
+[19:42:37] START: Background Batch Analysis 
+[19:42:37] PID: 1621679 
+[19:42:37] Data loaded: N=1337 
+[19:42:37] STEP 1: Re-estimating all Lavaan models... 
+[19:42:37]   Loading: Boenigk 3-Outcome 
+[19:42:38]     ✓ CFI=0.9951 
+[19:42:38]   Loading: Boenigk 4-Outcome 
+[19:42:41]     ✓ CFI=0.9540 
+[19:42:41]   Loading: Faircloth EXACT 
+[19:42:45]     ✓ CFI=0.9054 
+[19:42:45]   Loading: Boenigk EXACT 
+[19:42:46]     ✓ CFI=0.9930 
+[19:42:46] ✓ Lavaan summary saved 
+[19:42:46] STEP 2: GLM Models for Donation Frequency (Frequentist)... 
+[19:42:46]   ✓ GLM models fitted 
+[19:42:46] ✓ GLM results saved 
+[19:42:46] STEP 3: Bayesian GLM Models (MCMC)... 

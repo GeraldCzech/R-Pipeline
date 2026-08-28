@@ -94,15 +94,20 @@ cat("─────────────────────────
 # P0-03 FIX: Robust divergence extraction
 rhat_val <- max(bayesplot::rhat(bayes_binary$fit), na.rm = TRUE)
 
-# P0-03: Robust extraction with fallback
+# B-02 FIX: Use supported RStan API - FAIL CLOSED (error → stop, not → 0)
 divergences_val <- tryCatch({
-  sum(bayes_binary$fit@sim$divergences[[1]]) +
-    sum(bayes_binary$fit@sim$divergences[[2]]) +
-    sum(bayes_binary$fit@sim$divergences[[3]]) +
-    sum(bayes_binary$fit@sim$divergences[[4]])
+  sampler_params <- rstan::get_sampler_params(bayes_binary$fit, inc_warmup = FALSE)
+  if (length(sampler_params) == 0L) stop("No sampler parameters available")
+
+  sum(vapply(
+    sampler_params,
+    function(x) sum(x[, "divergent__"], na.rm = TRUE),
+    numeric(1)
+  ))
 }, error = function(e) {
-  cat("⚠ Warning: divergence extraction failed, assuming 0\n")
-  0
+  cat("✗ CRITICAL: Divergence extraction failed - cannot verify convergence\n")
+  cat(sprintf("Error: %s\n", e$message))
+  stop("Divergence diagnostic failed - gate cannot proceed")
 })
 
 # P0-04 FIX: Real separate Bulk/Tail ESS
@@ -389,16 +394,26 @@ n_iter_amount <- bayes_amount$fit@sim$iter
 n_warmup_amount <- bayes_amount$fit@sim$warmup
 n_post_samples_amount <- (n_iter_amount - n_warmup_amount) * n_chains_amount
 
-# Robust divergence extraction for both models
-div_binary <- tryCatch({
-  sum(bayes_binary$fit@sim$divergences[[1]]) + sum(bayes_binary$fit@sim$divergences[[2]]) +
-    sum(bayes_binary$fit@sim$divergences[[3]]) + sum(bayes_binary$fit@sim$divergences[[4]])
-}, error = function(e) 0)
+# B-02 FIX: Use supported RStan API for both models - FAIL CLOSED
+extract_divergences_safe <- function(brms_fit, model_name) {
+  tryCatch({
+    sampler_params <- rstan::get_sampler_params(brms_fit$fit, inc_warmup = FALSE)
+    if (length(sampler_params) == 0L) stop("No sampler parameters available")
 
-div_amount <- tryCatch({
-  sum(bayes_amount$fit@sim$divergences[[1]]) + sum(bayes_amount$fit@sim$divergences[[2]]) +
-    sum(bayes_amount$fit@sim$divergences[[3]]) + sum(bayes_amount$fit@sim$divergences[[4]])
-}, error = function(e) 0)
+    sum(vapply(
+      sampler_params,
+      function(x) sum(x[, "divergent__"], na.rm = TRUE),
+      numeric(1)
+    ))
+  }, error = function(e) {
+    cat(sprintf("✗ CRITICAL: Divergence extraction failed for %s model\n", model_name))
+    cat(sprintf("Error: %s\n", e$message))
+    stop(sprintf("Divergence diagnostic failed for %s - cannot proceed", model_name))
+  })
+}
+
+div_binary <- extract_divergences_safe(bayes_binary, "Binary")
+div_amount <- extract_divergences_safe(bayes_amount, "Amount")
 
 diag_report <- tibble(
   model = c("Binary Logit", "Amount Gaussian"),

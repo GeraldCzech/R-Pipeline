@@ -1,0 +1,29 @@
+[Unit]
+Description=R Pipeline Web Dashboard
+Documentation=file:///home/gerald/R-pipeline/README.md
+After=network.target r-pipeline.service
+
+[Service]
+Type=simple
+User=gerald
+WorkingDirectory=/home/gerald/R-pipeline
+ExecStart=/usr/bin/python3 /home/gerald/R-pipeline/dashboard_app.py
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Resource limits
+MemoryLimit=256M
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=r-pipeline-dashboard
+
+# Security
+PrivateTmp=yes
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
