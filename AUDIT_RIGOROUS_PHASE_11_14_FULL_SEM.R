@@ -108,7 +108,7 @@ sem_fit <- blavaan(
   burnin = 3000,
   sample = 6000,
   adapt = 1000,
-  save.lvs = TRUE,
+  save.lvs = FALSE,
   target = "stan"
 )
 
