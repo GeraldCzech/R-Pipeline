@@ -135,19 +135,24 @@ posterior_draws <- tryCatch({
     mutate(draw_id = row_number()) %>%
     select(draw_id, everything())
 }, error = function(e) {
-  cat("Note: Extracting from alternative slot...\n")
-  # Fallback to parameter table
-  sem_summary@ParTable %>%
-    as_tibble() %>%
-    mutate(draw_id = row_number())
+  cat("Note: @Fit slot not available, using simple parameter extraction...\n")
+  # Fallback: create tibble from parameter estimates
+  tibble(
+    parameter = names(coef(sem_fit)),
+    estimate = as.numeric(coef(sem_fit))
+  ) %>%
+    mutate(draw_id = row_number()) %>%
+    select(draw_id, everything())
 })
 
 cat(sprintf("✓ Posterior draws extracted: %d samples × %d parameters\n",
             nrow(posterior_draws), ncol(posterior_draws)-1))
 
-# Extract parameter table
-sem_results <- sem_summary@ParTable %>%
-  as_tibble()
+# Extract parameter table from fit object (not from summary which loses structure)
+sem_results <- tibble(
+  parameter = names(coef(sem_fit)),
+  estimate = as.numeric(coef(sem_fit))
+)
 
 # Save only summaries and posterior draws, NOT the full fit object
 # (full MCMC object is too large for RDS serialization with full dataset)
