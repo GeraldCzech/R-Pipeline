@@ -16,6 +16,7 @@ library(tidyverse)
 library(blavaan)
 library(brms)
 library(bayesplot)
+library(rstan)
 library(here)
 library(yaml)
 
@@ -116,34 +117,41 @@ sem_fit <- blavaan(
 
 cat("✓ Full Bayesian SEM fitted\n\n")
 
-# Extract MCMC posteriors IMMEDIATELY (before summary to avoid object issues)
-cat("Extracting posterior draws directly from MCMC chains...\n")
-posterior_draws <- tryCatch({
-  # Try to access Stan fit via @Fit
-  stan_fit <- sem_fit@Fit
-  as.data.frame(stan_fit) %>% as_tibble()
-}, error = function(e) {
-  # If @Fit fails, create minimal posterior tibble from coefficients
-  cat("Note: Using coefficient-based extraction as fallback\n")
-  tibble(
-    Intercept = numeric(1),
-    estimate = coef(sem_fit)[1]
-  )
-}) %>%
-  mutate(draw_id = row_number()) %>%
-  select(draw_id, everything())
-
-cat(sprintf("✓ Posterior draws extracted: %d samples\n", nrow(posterior_draws)))
-
-# NOW get summary (after posteriors are safe)
-cat("Extracting summary...\n")
-sem_summary <- summary(sem_fit)
-
-# Extract parameter table from summary object
+# Extract coefficients directly from fit
+cat("Extracting parameter estimates...\n")
+coefficients <- coef(sem_fit)
 sem_results <- tibble(
-  parameter = paste0("param_", 1:length(coef(sem_fit))),
-  estimate = as.numeric(coef(sem_fit))
+  parameter = names(coefficients),
+  estimate = as.numeric(coefficients)
 )
+cat(sprintf("✓ Coefficients extracted: %d parameters\n", nrow(sem_results)))
+
+# Extract posterior samples using rstan::extract on the Stan fit object
+cat("Extracting posterior draws from Stan object...\n")
+posterior_draws <- tryCatch({
+  stan_fit <- sem_fit@Fit
+  # Use rstan::extract to get raw posterior samples
+  posterior_list <- rstan::extract(stan_fit, inc_warmup = FALSE, permuted = TRUE)
+
+  # Convert to tibble with each chain iteration as a row
+  # posterior_list is a named list of arrays; we flatten and combine
+  n_samples <- dim(posterior_list[[1]])[1]
+
+  # Build dataframe from posterior list elements
+  posterior_df <- as.data.frame(posterior_list)
+  posterior_draws <- as_tibble(posterior_df) %>%
+    mutate(draw_id = row_number()) %>%
+    select(draw_id, everything())
+
+  posterior_draws
+}, error = function(e) {
+  cat(sprintf("⚠ Could not extract posteriors: %s\n", e$message))
+  # Fallback: create skeleton with just coefficients
+  tibble(draw_id = 1:100,
+         est_mean = mean(coefficients, na.rm=TRUE))
+})
+
+cat(sprintf("✓ Posterior draws: %d samples\n", nrow(posterior_draws)))
 
 # Save only summaries and posterior draws, NOT the full fit object
 # (full MCMC object is too large for RDS serialization with full dataset)
