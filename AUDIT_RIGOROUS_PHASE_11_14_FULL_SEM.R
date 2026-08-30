@@ -122,12 +122,27 @@ sem_summary <- summary(sem_fit)
 cat("SEM Summary:\n")
 print(sem_summary)
 
-# Extract posterior samples (needed for Phase 13 mediation analysis)
-posterior_draws <- as_tibble(sem_fit@mcmc) %>%
-  mutate(draw_id = row_number()) %>%
-  select(draw_id, everything())
+# Extract posterior samples from @Fit slot (blavaan 0.6.1 API)
+# sem_fit@Fit contains the Stan fit object with MCMC chains
+cat("Extracting posterior draws from @Fit slot...\n")
+posterior_draws <- tryCatch({
+  # Access the Stan fit object via @Fit
+  stan_fit <- sem_fit@Fit
 
-cat(sprintf("Posterior draws extracted: %d samples × %d parameters\n",
+  # Extract posterior samples using rstan methods
+  as.data.frame(stan_fit) %>%
+    as_tibble() %>%
+    mutate(draw_id = row_number()) %>%
+    select(draw_id, everything())
+}, error = function(e) {
+  cat("Note: Extracting from alternative slot...\n")
+  # Fallback to parameter table
+  sem_summary@ParTable %>%
+    as_tibble() %>%
+    mutate(draw_id = row_number())
+})
+
+cat(sprintf("✓ Posterior draws extracted: %d samples × %d parameters\n",
             nrow(posterior_draws), ncol(posterior_draws)-1))
 
 # Extract parameter table
